@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Optical Shop Manager</title>
+<style>
+:root{--bg:#f4f7f8;--card:#fff;--ink:#12303a;--mut:#62767d;--pri:#0f5c6e;--on:#fff;--line:#d9e3e6;--warn:#b45309;--warnbg:#fdf0d8;--ok:#17723f;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1a1e;--card:#162429;--ink:#e6f0f2;--mut:#93a8ae;--pri:#4fb3c8;--on:#07191e;--line:#26393f;--warn:#f0b35a;--warnbg:#3a2c12;--ok:#5cc58a;--bad:#ff8a7a}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px}
+header{padding:16px 16px 4px}header h1{margin:0;font-size:20px}header small{color:var(--mut)}
+main{padding:8px 14px;max-width:640px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--mut);font-size:13px}
+.warn{background:var(--warnbg);border-color:var(--warn);color:var(--warn)}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;margin:3px 0}
+label{font-size:13px;color:var(--mut)}
+button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--pri);color:var(--on);font-weight:600}
+button.g{background:transparent;color:var(--pri);border:1px solid var(--pri)}button.d{background:var(--bad);color:#fff}button.s{padding:6px 12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 4px;font-size:14px}nav button.on{color:var(--pri);box-shadow:inset 0 3px 0 var(--pri)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--line)}.tag.low{background:var(--warnbg);color:var(--warn);font-weight:700}
+table{width:100%;border-collapse:collapse;text-align:center}td,th{padding:2px}th{font-size:12px;color:var(--mut)}td input{text-align:center;padding:8px 2px}
+.m{color:var(--mut);font-size:13px}.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;padding:14px;z-index:5}
+.sheet>div{max-width:640px;margin:auto}.bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.bar>*{flex:1}
+#t{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;z-index:9;display:none;max-width:90%}
+</style></head><body>
+<header><h1 id="sn">Optical Shop Manager</h1><small id="today"></small></header>
+<main id="v"></main>
+<nav id="nav"></nav><div id="t"></div><div id="sh"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+var SB_URL='https://tthgtvrumnlhruzlostw.supabase.co',SB_KEY='sb_publishable_49rc2JYcuiAP5YdfZcXi1g_RdsJkBh3';
+var SB=supabase.createClient(SB_URL,SB_KEY),U=null,tab='home',seg='frames',q='';
+var db={orders:[],frames:[],lenses:[],set:{shop:'My Optical Shop',phone:'',currency:'Rs'}};
+var $=function(i){return document.getElementById(i)};
+var iso=function(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var N=function(x){return Number(x)||0},rs=function(x){return (db.set.currency||'Rs')+' '+N(x).toLocaleString('en-US')};
+function toast(m){var t=$('t');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},2600)}
+function bad(r){if(r&&r.error){toast(r.error.message);return true}return false}
+/* ---------- login ---------- */
+function authUI(){$('nav').innerHTML='';$('sn').textContent='Optical Shop Manager';$('today').textContent='Apni dukaan ka account';
+ $('v').innerHTML='<div class="card"><label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button data-c="login()">Login</button><button class="g" data-c="signup()">Naya account</button></div></div>'}
+async function login(){var r=await SB.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(bad(r))return;boot()}
+async function signup(){var r=await SB.auth.signUp({email:$('em').value.trim(),password:$('pw').value});if(bad(r))return;if(r.data.session)boot();else toast('Email check karein aur confirm link dabayein, phir Login karein')}
+async function logout(){await SB.auth.signOut();U=null;db.orders=[];db.frames=[];db.lenses=[];authUI()}
+async function boot(){var s=await SB.auth.getSession();if(!s.data.session)return authUI();U=s.data.session.user;await load();render()}
+async function load(){var r=await Promise.all([SB.from('orders').select('*').order('created_at'),SB.from('frames').select('*').order('created_at'),SB.from('lenses').select('*').order('created_at'),SB.from('settings').select('*').maybeSingle()]);
+ if(bad(r[0])||bad(r[1])||bad(r[2]))return;
+ db.orders=r[0].data.map(function(o,i){o.no=i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
+ db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data)}
+/* ---------- app ---------- */
+var tabs=[['home','Dashboard'],['orders','Orders'],['stock','Stock'],['more','Settings']];
+function nav(){$('nav').innerHTML=tabs.map(function(t){return '<button class="'+(tab==t[0]?'on':'')+'" data-c="go(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')}
+function go(t){tab=t;q='';render()}
+function lowF(){return db.frames.filter(function(f){return N(f.qty)<=N(f.min)})}
+function lowL(){return db.lenses.filter(function(l){return N(l.qty)<=N(l.min)})}
+function lname(l){return l.type+' '+(l.sph>0?'+':'')+l.sph+(N(l.cyl)?' / '+l.cyl:'')}
+function render(){nav();$('sn').textContent=db.set.shop;$('today').textContent=new Date().toDateString();({home:home,orders:orders,stock:stock,more:more})[tab]()}
+function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={};
+ O.forEach(function(o){if(o.date==td)tS+=N(o.total);if(o.date.slice(0,7)==mo)mS+=N(o.total);bal+=N(o.total)-N(o.paid);ph[o.phone]=1});
+ var lf=lowF(),ll=lowL(),pend=O.filter(function(o){return o.status!='Delivered'});
+ $('v').innerHTML='<div class="grid"><div class="card stat"><b>'+O.filter(function(o){return o.date==td}).length+'</b><span>Aaj ke customer</span></div><div class="card stat"><b>'+rs(tS)+'</b><span>Aaj ki sale</span></div><div class="card stat"><b>'+rs(mS)+'</b><span>Is mahine ki sale</span></div><div class="card stat"><b>'+rs(bal)+'</b><span>Baqaya (udhaar)</span></div><div class="card stat"><b>'+Object.keys(ph).length+'</b><span>Kul customers</span></div><div class="card stat"><b>'+pend.length+'</b><span>Pending orders</span></div></div>'
+ +(lf.length||ll.length?'<div class="card warn"><b>Low stock alert</b>'+lf.map(function(f){return '<div>Frame: '+esc(f.name)+' ('+f.qty+' bacha)</div>'}).join('')+ll.map(function(l){return '<div>Lens: '+esc(lname(l))+' ('+l.qty+' jori bachi)</div>'}).join('')+'</div>':'<div class="card m">Stock theek hai. Koi low alert nahi.</div>')
+ +'<button style="width:100%;padding:14px" data-c="newOrder()">+ Naya order</button>'}
+function orders(){$('v').innerHTML='<div class="row"><input placeholder="Naam ya number se dhundein" value="'+esc(q)+'" data-i="qo(this.value)"><button data-c="newOrder()">+ Naya</button></div><div id="ol"></div>';orders2()}
+function qo(v){q=v;orders2()}function qs(v){q=v;st2()}function sg(v){seg=v;render()}
+function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !s||(o.name+o.phone).toLowerCase().indexOf(s)>-1}).sort(function(a,b){return b.ts-a.ts});
+ $('ol').innerHTML=L.map(function(o){var b=N(o.total)-N(o.paid);return '<div class="card" data-c="detail(\''+o.id+'\')"><div class="row"><b>'+esc(o.name)+'</b><span class="tag">'+o.status+'</span></div><div class="m">#'+o.no+' | '+esc(o.phone)+' | '+o.date+'</div><div class="row"><span>'+rs(o.total)+'</span><span style="color:'+(b>0?'var(--bad)':'var(--ok)')+'">'+(b>0?'Baqaya '+rs(b):'Paid')+'</span></div></div>'}).join('')||'<p class="m">Koi order nahi mila.</p>'}
+function sheet(h){$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
+function close_(){$('sh').innerHTML=''}
+function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="decimal"></td>'}).join('')+'</tr>'}
+function newOrder(){var fo=db.frames.map(function(f){return '<option value="'+f.id+'">'+esc(f.name)+' ('+f.qty+')</option>'}).join(''),lo=db.lenses.map(function(l){return '<option value="'+l.id+'">'+esc(lname(l))+' ('+l.qty+')</option>'}).join('');
+ sheet('<h3>Naya order</h3><label>Naam</label><input id="n"><label>WhatsApp number (923001234567)</label><input id="p" inputmode="tel" data-i="fill()"><div id="hist" class="m"></div>'
+ +'<label>Aankh ka number</label><table><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>'+rxrow('R')+rxrow('L')+'</table>'
+ +'<label>Frame (stock se)</label><select id="fs"><option value="">-- Stock se nahi / apna --</option>'+fo+'</select><input id="fn" placeholder="Frame ka naam (agar stock se nahi)">'
+ +'<label>Lens (stock se)</label><select id="ls"><option value="">-- Stock se nahi --</option>'+lo+'</select>'
+ +'<label>Lens type</label><select id="lt"><option>Single Vision</option><option>Bifocal</option><option>Progressive</option><option>Blue Cut</option><option>Photochromic</option></select><input id="co" placeholder="Coating (AR, UV, etc.)">'
+ +'<div class="grid"><div><label>Kul price</label><input id="tt" inputmode="numeric"></div><div><label>Advance</label><input id="pd" inputmode="numeric"></div></div><label>Delivery date</label><input id="dd" type="date"><label>Note</label><input id="nt">'
+ +'<div class="bar"><button class="g" data-c="close_()">Cancel</button><button data-c="saveO()">Save order</button></div>')}
+function fill(){var p=$('p').value.trim().replace(/\D/g,''),h=db.orders.filter(function(o){return o.phone==p}).sort(function(a,b){return b.ts-a.ts})[0];
+ $('hist').innerHTML=h?'Purana customer: '+esc(h.name)+' <button class="s g" data-c="useRx(\''+h.id+'\')">Purana number lagayein</button>':''}
+function useRx(id){var o=db.orders.find(function(x){return x.id==id});['R','L'].forEach(function(e){['sph','cyl','axis','add'].forEach(function(k){$(e+k).value=(o.rx[e]||{})[k]||''})});$('n').value=o.name}
+async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/\D/g,'');if(!n||!p)return toast('Naam aur number zaroori');
+ var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=$(e+k).value.trim()})});
+ var f=db.frames.find(function(x){return x.id==$('fs').value}),l=db.lenses.find(function(x){return x.id==$('ls').value});
+ if(f&&N(f.qty)<1)return toast('Ye frame stock mein khatam hai');if(l&&N(l.qty)<1)return toast('Ye lens stock mein khatam hai');
+ var row={name:n,phone:p,rx:rx,frame:f?f.name:$('fn').value.trim(),lens:$('lt').value+(l?' ['+lname(l)+']':''),coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim(),status:'Ordered'};
+ var r=await SB.from('orders').insert(row).select().single();if(bad(r))return;
+ if(f){f.qty=N(f.qty)-1;await SB.from('frames').update({qty:f.qty}).eq('id',f.id)}
+ if(l){l.qty=N(l.qty)-1;await SB.from('lenses').update({qty:l.qty}).eq('id',l.id)}
+ var o=r.data;o.no=db.orders.length+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();db.orders.push(o);
+ close_();toast('Order save ho gaya');render();detail(o.id)}
+function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.total)-N(o.paid);
+ sheet('<div class="row"><h3>#'+o.no+' '+esc(o.name)+'</h3><button class="g s" data-c="close_()">Band</button></div><div class="card"><div>'+esc(o.phone)+' | '+o.date+'</div><table><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>'
+ +['R','L'].map(function(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td>'+esc((o.rx[e]||{})[k]||'-')+'</td>'}).join('')+'</tr>'}).join('')+'</table>'
+ +'<p>Frame: '+esc(o.frame||'-')+'<br>Lens: '+esc(o.lens)+' '+esc(o.coat)+'<br>Delivery: '+(o.due||'-')+'<br>'+esc(o.note)+'</p><b>Total '+rs(o.total)+' | Advance '+rs(o.paid)+' | Baqaya '+rs(b)+'</b></div>'
+ +'<label>Status</label><select data-h="stat(\''+id+'\',this.value)">'+['Ordered','Ready','Delivered'].map(function(s){return '<option'+(s==o.status?' selected':'')+'>'+s+'</option>'}).join('')+'</select>'
+ +(b>0?'<div class="row"><input id="rp" inputmode="numeric" placeholder="Payment mili"><button data-c="pay(\''+id+'\')">Add</button></div>':'')
+ +'<div class="bar"><button data-c="dl(\''+id+'\')">PDF Download</button></div><div class="bar"><button class="g" data-c="share(\''+id+'\')">Share (WhatsApp)</button><a target="_blank" rel="noopener" href="https://wa.me/'+o.phone+'?text='+encodeURIComponent(msg(o))+'" style="display:block;text-align:center;text-decoration:none;border:1px solid var(--pri);color:var(--pri);border-radius:10px;padding:10px 14px;font-weight:600">WhatsApp kholein</a></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
+async function stat(id,s){var r=await SB.from('orders').update({status:s}).eq('id',id);if(bad(r))return;db.orders.find(function(x){return x.id==id}).status=s;toast(s);render()}
+async function pay(id){var v=N($('rp').value);if(!v)return;var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v,r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
+async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});db.orders.forEach(function(o,i){o.no=i+1});close_();render()}
+function msg(o){var b=N(o.total)-N(o.paid),r=function(e){var x=o.rx[e]||{};return e+': SPH '+(x.sph||'-')+' CYL '+(x.cyl||'-')+' AXIS '+(x.axis||'-')+(x.add?' ADD '+x.add:'')};
+ return '*'+db.set.shop+'*\nOrder #'+o.no+' ('+o.date+')\nNaam: '+o.name+'\n'+r('R')+'\n'+r('L')+'\nFrame: '+(o.frame||'-')+'\nLens: '+o.lens+' '+(o.coat||'')+'\nTotal: '+rs(o.total)+'\nAdvance: '+rs(o.paid)+'\nBaqaya: '+rs(b)+'\nDelivery: '+(o.due||'-')+'\nShukriya!'}
+function pdf2(o){var J=window.jspdf;if(!J)return null;var d=new J.jsPDF({unit:'mm',format:'a5'}),b=N(o.total)-N(o.paid),T=[15,92,110],A=[232,163,61],G=[110,125,130],K=[18,48,58];
+ d.setFillColor(T[0],T[1],T[2]);d.rect(0,0,148,34,'F');d.setFillColor(A[0],A[1],A[2]);d.rect(0,34,148,1.6,'F');
+ d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(21);d.text(db.set.shop,74,15,{align:'center'});d.setFont('helvetica','normal');d.setFontSize(10);d.text(db.set.phone?('Tel: '+db.set.phone):'Eye Care & Optical',74,23,{align:'center'});d.setFontSize(8);d.text('Eyeglasses | Lenses | Eye Testing',74,29,{align:'center'});
+ d.setTextColor(T[0],T[1],T[2]);d.setFont('helvetica','bold');d.setFontSize(14);d.text('Order Slip',10,47);d.setFontSize(9);d.setTextColor(G[0],G[1],G[2]);d.setFont('helvetica','normal');d.text('Slip No: '+String(o.no).padStart(4,'0'),138,44,{align:'right'});d.text('Date: '+o.date,138,49,{align:'right'});
+ d.setFillColor(238,245,247);d.roundedRect(10,54,128,19,3,3,'F');d.setTextColor(G[0],G[1],G[2]);d.setFontSize(8);d.text('Customer',15,60);d.text('Mobile',85,60);d.setTextColor(K[0],K[1],K[2]);d.setFont('helvetica','bold');d.setFontSize(12);d.text(o.name,15,67);d.text(o.phone,85,67);
+ d.setTextColor(T[0],T[1],T[2]);d.setFontSize(10);d.text('Aankh ka number (Prescription)',10,82);
+ var cx=[10,38,63,88,113],cw=[28,25,25,25,25],hd=['Eye','SPH','CYL','AXIS','ADD'],y=85;
+ d.setFillColor(T[0],T[1],T[2]);d.roundedRect(10,y,128,9,2,2,'F');d.setTextColor(255,255,255);d.setFontSize(9);hd.forEach(function(h,i){d.text(h,cx[i]+cw[i]/2,y+6,{align:'center'})});
+ d.setDrawColor(200,215,219);d.setLineWidth(.3);
+ [['R','Right Eye'],['L','Left Eye']].forEach(function(e,r){var yy=y+9+r*10,x=o.rx[e[0]]||{};d.setFillColor(r?255:248,r?255:251,r?255:252);d.rect(10,yy,128,10,'FD');d.setTextColor(K[0],K[1],K[2]);d.setFont('helvetica','bold');d.setFontSize(9);d.text(e[1],12,yy+6.5);d.setFont('helvetica','normal');d.setFontSize(11);[x.sph,x.cyl,x.axis,x.add].forEach(function(v,i){d.text(String(v||'-'),cx[i+1]+cw[i+1]/2,yy+6.8,{align:'center'})})});
+ var rows=[['Frame',o.frame||'-'],['Lens',o.lens],['Coating',o.coat||'-'],['Delivery',o.due||'-']],ry=118;d.setFontSize(10);
+ rows.forEach(function(r){d.setTextColor(G[0],G[1],G[2]);d.setFont('helvetica','normal');d.text(r[0],10,ry);d.setTextColor(K[0],K[1],K[2]);d.setFont('helvetica','bold');d.text(String(r[1]).slice(0,48),48,ry);d.setDrawColor(225,233,235);d.line(10,ry+2.5,138,ry+2.5);ry+=8});
+ d.setFillColor(238,245,247);d.roundedRect(10,154,128,36,3,3,'F');d.setFont('helvetica','normal');d.setFontSize(10);d.setTextColor(G[0],G[1],G[2]);d.text('Total',16,163);d.text('Advance',16,171);d.setTextColor(K[0],K[1],K[2]);d.setFont('helvetica','bold');d.text(rs(o.total),132,163,{align:'right'});d.text(rs(o.paid),132,171,{align:'right'});
+ d.setFillColor(b>0?A[0]:30,b>0?A[1]:140,b>0?A[2]:80);d.roundedRect(14,175,120,11,2.5,2.5,'F');d.setTextColor(255,255,255);d.setFontSize(11);d.text(b>0?'Baqaya (Balance)':'Payment Complete',19,182.2);d.setFontSize(12);d.text(b>0?rs(b):'Paid',129,182.2,{align:'right'});
+ d.setTextColor(G[0],G[1],G[2]);d.setFont('helvetica','normal');d.setFontSize(9);if(o.note)d.text('Note: '+o.note.slice(0,70),10,197);d.setTextColor(T[0],T[1],T[2]);d.setFont('helvetica','bold');d.setFontSize(10);d.text('Shukriya! Dobara tashreef layein.',74,205,{align:'center'});return d}
+function fname(o){return 'Slip-'+o.no+'-'+o.name.replace(/[^A-Za-z0-9]+/g,'_')+'.pdf'}
+function dl(id){var o=db.orders.find(function(x){return x.id==id}),d=pdf2(o);if(!d)return toast('PDF load nahi hua, internet check karein');d.save(fname(o));toast('PDF save ho rahi hai')}
+async function share(id){var o=db.orders.find(function(x){return x.id==id}),d=pdf2(o);if(!d)return toast('PDF load nahi hua, internet check karein');
+ try{var f=new File([d.output('blob')],fname(o),{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Slip #'+o.no});return}}catch(e){if(e&&e.name=='AbortError')return}
+ toast('Share yahan nahi chala. PDF Download karein ya WhatsApp kholein dabayein')}
+/* ---------- stock ---------- */
+function stock(){$('v').innerHTML='<div class="bar"><button class="'+(seg=='frames'?'':'g')+'" data-c="sg(\'frames\')">Frames</button><button class="'+(seg=='lenses'?'':'g')+'" data-c="sg(\'lenses\')">Lenses</button></div>'
+ +'<div class="card">'+(seg=='frames'?'<input id="a1" placeholder="Frame naam/model"><div class="grid"><input id="a2" inputmode="numeric" placeholder="Quantity"><input id="a3" inputmode="numeric" placeholder="Low alert (2)"></div>'
+ :'<select id="a1"><option>Single Vision</option><option>Bifocal</option><option>Progressive</option><option>Blue Cut</option><option>Photochromic</option></select><div class="grid"><input id="s1" inputmode="decimal" placeholder="SPH (-2.00)"><input id="s2" inputmode="decimal" placeholder="CYL (-0.50)"><input id="a2" inputmode="numeric" placeholder="Jori quantity"><input id="a3" inputmode="numeric" placeholder="Low alert (2)"></div>')
+ +'<button style="width:100%" data-c="addS()">Stock add karein</button></div>'
+ +(seg=='lenses'?'<input placeholder="SPH se dhundein (jaise -2)" data-i="qs(this.value)">':'')+'<div id="sl"></div>';st2()}
+function st2(){var list=seg=='frames'?db.frames:db.lenses.slice().sort(function(a,b){return N(a.sph)-N(b.sph)||N(a.cyl)-N(b.cyl)});
+ if(seg=='lenses'&&q)list=list.filter(function(l){return String(l.sph).indexOf(q)>-1});
+ $('sl').innerHTML=list.map(function(x){var lo=N(x.qty)<=N(x.min);return '<div class="card row"><div><b>'+esc(seg=='frames'?x.name:lname(x))+'</b><br><span class="tag '+(lo?'low':'')+'">'+(lo?'LOW: ':'Stock: ')+x.qty+'</span> <span class="m">alert '+x.min+'</span></div><div class="row"><button class="s" data-c="adj(\''+x.id+'\',-1)">-</button><button class="s" data-c="adj(\''+x.id+'\',1)">+</button><button class="s g" data-c="rm(\''+x.id+'\')">x</button></div></div>'}).join('')||'<p class="m">Abhi koi stock nahi.</p>'}
+async function addS(){var a=$('a1').value.trim(),qn=N($('a2').value),m=$('a3').value===''?2:N($('a3').value);if(!a)return toast('Naam zaroori');var r;
+ if(seg=='frames'){r=await SB.from('frames').insert({name:a,qty:qn,min:m}).select().single();if(bad(r))return;db.frames.push(r.data)}
+ else{var s=$('s1').value.trim(),c=$('s2').value.trim();if(s==='')return toast('SPH likhein');
+  var ex=db.lenses.find(function(l){return l.type==a&&N(l.sph)==N(s)&&N(l.cyl)==N(c)});
+  if(ex){ex.qty=N(ex.qty)+qn;r=await SB.from('lenses').update({qty:ex.qty}).eq('id',ex.id);if(bad(r))return}
+  else{r=await SB.from('lenses').insert({type:a,sph:N(s),cyl:c===''?null:N(c),qty:qn,min:m}).select().single();if(bad(r))return;db.lenses.push(r.data)}}
+ toast('Add ho gaya');stock()}
+async function adj(id,n){var t=db.frames.some(function(z){return z.id==id})?'frames':'lenses',x=db[t].find(function(z){return z.id==id}),v=Math.max(0,N(x.qty)+n),r=await SB.from(t).update({qty:v}).eq('id',id);if(bad(r))return;x.qty=v;st2()}
+async function rm(id){if(!confirm('Hata dein?'))return;var t=db.frames.some(function(z){return z.id==id})?'frames':'lenses',r=await SB.from(t).delete().eq('id',id);if(bad(r))return;db[t]=db[t].filter(function(z){return z.id!=id});st2()}
+/* ---------- settings ---------- */
+function more(){$('v').innerHTML='<div class="card"><b>Shop details (slip par aayengi)</b><input id="sp" placeholder="Shop ka naam" value="'+esc(db.set.shop)+'"><input id="sq" placeholder="Shop ka number" value="'+esc(db.set.phone)+'"><input id="sc" placeholder="Currency (Rs, $, AED...)" value="'+esc(db.set.currency)+'"><button data-c="setS()">Save</button></div>'
+ +'<div class="card"><div class="m">Login: '+esc(U&&U.email)+'</div><p class="m">Aap ka data online mehfooz hai, kisi bhi phone par login karke khul jata hai.</p><button class="g" data-c="logout()">Logout</button></div>'}
+async function setS(){var s={user_id:U.id,shop:$('sp').value||'My Optical Shop',phone:$('sq').value,currency:$('sc').value||'Rs'},r=await SB.from('settings').upsert(s);if(bad(r))return;db.set=Object.assign(db.set,s);toast('Save ho gaya');render()}
+/* ---------- events ---------- */
+function runA(el,attr){var a=el.getAttribute(attr),m=a&&a.match(/^(\w+)\((.*)\)$/);if(!m||typeof window[m[1]]!=='function')return;
+ var args=m[2]===''?[]:m[2].split(',').map(function(x){x=x.trim();if(x==='this.value')return el.value;if(/^'.*'$/.test(x))return x.slice(1,-1);return Number(x)});window[m[1]].apply(null,args)}
+document.addEventListener('click',function(e){var el=e.target;while(el&&el!==document){if(el.getAttribute&&el.getAttribute('data-c')){runA(el,'data-c');return}el=el.parentNode}});
+document.addEventListener('input',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-i'))runA(el,'data-i')});
+document.addEventListener('change',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-h'))runA(el,'data-h')});
+boot();
+</script></body></html>
