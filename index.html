@@ -1,37 +1,59 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Optical Shop Manager</title>
+<meta name="theme-color" content="#1a2a6c"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet"><title>Optical Shop Manager</title>
 <style>
-:root{--bg:#f4f7f8;--card:#fff;--ink:#12303a;--mut:#62767d;--pri:#0f5c6e;--on:#fff;--line:#d9e3e6;--warn:#b45309;--warnbg:#fdf0d8;--ok:#17723f;--bad:#b42318}
-@media (prefers-color-scheme:dark){:root{--bg:#0e1a1e;--card:#162429;--ink:#e6f0f2;--mut:#93a8ae;--pri:#4fb3c8;--on:#07191e;--line:#26393f;--warn:#f0b35a;--warnbg:#3a2c12;--ok:#5cc58a;--bad:#ff8a7a}}
-*{box-sizing:border-box}html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px}
-header{padding:16px 16px 4px}header h1{margin:0;font-size:20px}header small{color:var(--mut)}
-main{padding:8px 14px;max-width:640px;margin:auto}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat b{display:block;font-size:22px}.stat span{color:var(--mut);font-size:13px}
-.warn{background:var(--warnbg);border-color:var(--warn);color:var(--warn)}
-input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;margin:3px 0}
-label{font-size:13px;color:var(--mut)}
-button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--pri);color:var(--on);font-weight:600}
-button.g{background:transparent;color:var(--pri);border:1px solid var(--pri)}button.d{background:var(--bad);color:#fff}button.s{padding:6px 12px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 4px;font-size:14px}nav button.on{color:var(--pri);box-shadow:inset 0 3px 0 var(--pri)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.tag{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--line)}.tag.low{background:var(--warnbg);color:var(--warn);font-weight:700}
-table{width:100%;border-collapse:collapse;text-align:center}td,th{padding:2px}th{font-size:12px;color:var(--mut)}td input{text-align:center;padding:8px 2px}
-.m{color:var(--mut);font-size:13px}.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;padding:14px;z-index:5}
+:root{--bg:#f3f4fa;--card:#fff;--ink:#15203b;--mut:#6a7391;--pri:#22358a;--on:#fff;--acc:#e08a2b;--line:#e2e5f0;--soft:#eceffa;--warn:#9a5a0a;--warnbg:#fff1dc;--ok:#157a47;--okbg:#def5e8;--bad:#c0322b;--hd:#1a2a6c;--blue:#1f5fbf;--bluebg:#e0ebfc}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1226;--card:#171e38;--ink:#e8ebf8;--mut:#98a2c6;--pri:#8ea2ff;--on:#0d1226;--acc:#f2a24d;--line:#262f52;--soft:#1f2848;--warn:#f2b366;--warnbg:#3a2a12;--ok:#5fd09a;--okbg:#14352a;--bad:#ff8f86;--hd:#141b3d;--blue:#8fb6ff;--bluebg:#1a2a52}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:150px}
+header{background:var(--hd);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 26px;border-radius:0 0 26px 26px}
+.hd{max-width:640px;margin:auto;display:flex;align-items:center;gap:12px}
+.lg{display:inline-flex;width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.12);align-items:center;justify-content:center;flex:none}
+.lg svg{width:30px;height:15px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
+header h1{margin:0;font-size:19px;font-weight:800;letter-spacing:.1px}header small{color:rgba(255,255,255,.7);font-size:12.5px}
+main{padding:14px 14px 0;max-width:640px;margin:auto}
+.hero{position:relative;overflow:hidden;background:var(--pri);color:var(--on);border-radius:22px;padding:20px;margin:-6px 0 12px}
+.hg{position:absolute;right:-18px;top:-14px;width:170px;height:85px;fill:none;stroke:var(--acc);stroke-width:2;opacity:.55}
+.hl{font-size:13px;opacity:.85}.hn{font-size:34px;font-weight:800;letter-spacing:-.5px;margin:2px 0 14px}
+.hr{display:flex;gap:26px}.hr b{display:block;font-size:20px}.hr span{font-size:12px;opacity:.8}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid .card{margin:0}
+.stat span{display:block;color:var(--mut);font-size:12.5px;margin-bottom:4px}.stat b{display:block;font-size:20px;font-weight:800}.neg{color:var(--bad)}
+.warn{background:var(--warnbg);border-color:transparent;color:var(--warn);margin-top:12px}
+input,select,textarea{width:100%;padding:12px 13px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;margin:4px 0 6px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--soft)}
+label{font-size:12.5px;color:var(--mut);font-weight:600}
+button{font:inherit;border:0;border-radius:14px;padding:12px 16px;background:var(--pri);color:var(--on);font-weight:700;cursor:pointer}
+button:active{transform:scale(.98)}
+button.g{background:var(--soft);color:var(--pri)}button.d{background:var(--bad);color:#fff}button.s{padding:7px 13px;border-radius:10px}
+.fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--acc);color:#1d1306;border-radius:30px;padding:15px 22px;box-shadow:0 8px 22px rgba(0,0,0,.28);font-weight:800;z-index:3}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:4}
+nav button{flex:1;background:none;color:var(--mut);border-radius:14px;padding:7px 4px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700}
+nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--pri);background:var(--soft)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--pri);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;flex:none}
+.tag{font-size:11.5px;padding:3px 10px;border-radius:20px;background:var(--soft);font-weight:700}
+.tag.stOrdered{background:var(--warnbg);color:var(--warn)}.tag.stReady{background:var(--bluebg);color:var(--blue)}.tag.stDelivered{background:var(--okbg);color:var(--ok)}
+.tag.low{background:var(--warnbg);color:var(--warn)}
+table{width:100%;border-collapse:collapse;text-align:center}td,th{padding:3px}th{font-size:12px;color:var(--mut)}td input{text-align:center;padding:10px 2px}
+.m{color:var(--mut);font-size:13px}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 40px;z-index:6;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
 .sheet>div{max-width:640px;margin:auto}.bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.bar>*{flex:1}
-#t{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;z-index:9;display:none;max-width:90%}
+.brand{text-align:center;padding:10px 0 4px}.brand .lg{width:64px;height:64px;border-radius:20px;background:var(--pri)}.brand .lg svg{width:40px;height:20px}
+.brand h2{margin:14px 0 4px;font-size:22px}
+#t{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:22px;z-index:9;display:none;max-width:90%;font-weight:600}
 </style></head><body>
-<header><h1 id="sn">Optical Shop Manager</h1><small id="today"></small></header>
+<header><div class="hd"><span class="lg" id="lg"></span><div><h1 id="sn">Optical Shop Manager</h1><small id="today"></small></div></div></header>
 <main id="v"></main>
 <nav id="nav"></nav><div id="t"></div><div id="sh"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+var LOGO='<svg viewBox="0 0 48 24"><circle cx="12" cy="12" r="9"/><circle cx="36" cy="12" r="9"/><path d="M21 11q3-3 6 0"/></svg>';
 var SB_URL='https://tthgtvrumnlhruzlostw.supabase.co',SB_KEY='sb_publishable_49rc2JYcuiAP5YdfZcXi1g_RdsJkBh3';
 var SB=supabase.createClient(SB_URL,SB_KEY),U=null,tab='home',seg='frames',q='';
 var db={orders:[],frames:[],lenses:[],set:{shop:'My Optical Shop',phone:'',currency:'Rs'}};
@@ -44,7 +66,7 @@ function bad(r){if(r&&r.error){toast(r.error.message);return true}return false}
 /* ---------- login ---------- */
 var mode='login';
 function authUI(m){if(m)mode=m;var reg=mode=='reg';$('nav').innerHTML='';$('sn').textContent='Optical Shop Manager';$('today').textContent=reg?'Naya account banayein':'Login';
- $('v').innerHTML='<div class="card">'+(reg?'<label>Shop ka naam (zaroori)</label><input id="sh1" placeholder="Jaise: Noor Opticals">':'')+'<label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="'+(reg?'new-password':'current-password')+'"><div class="bar"><button data-c="'+(reg?'signup()':'login()')+'">'+(reg?'Account banayein':'Login')+'</button></div><div class="bar"><button class="g" data-c="authUI(\''+(reg?'login':'reg')+'\')">'+(reg?'Pehle se account hai? Login':'Naya account banayein')+'</button></div></div>'}
+ $('v').innerHTML='<div class="brand"><div class="lg">'+LOGO+'</div><h2>'+(reg?'Dukaan ka account banayein':'Khush aamdeed')+'</h2><p class="m">Optical shop ka poora hisaab, ek jagah</p></div><div class="card">'+(reg?'<label>Shop ka naam (zaroori)</label><input id="sh1" placeholder="Jaise: Noor Opticals">':'')+'<label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="'+(reg?'new-password':'current-password')+'"><div class="bar"><button data-c="'+(reg?'signup()':'login()')+'">'+(reg?'Account banayein':'Login')+'</button></div><div class="bar"><button class="g" data-c="authUI(\''+(reg?'login':'reg')+'\')">'+(reg?'Pehle se account hai? Login':'Naya account banayein')+'</button></div></div>'}
 async function login(){var r=await SB.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(bad(r))return;boot()}
 async function signup(){var shop=$('sh1').value.trim();if(!shop)return toast('Shop ka naam likhna zaroori hai');
  var r=await SB.auth.signUp({email:$('em').value.trim(),password:$('pw').value,options:{data:{shop:shop}}});if(bad(r))return;
@@ -56,23 +78,25 @@ async function load(){var r=await Promise.all([SB.from('orders').select('*').ord
  db.orders=r[0].data.map(function(o,i){o.no=i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
  db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data);else{var sh=(U.user_metadata&&U.user_metadata.shop)||db.set.shop;db.set.shop=sh;await SB.from('settings').upsert({user_id:U.id,shop:sh,phone:'',currency:'Rs'})}}
 /* ---------- app ---------- */
+var IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',orders:'<path d="M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4"/>',stock:'<path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',more:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'};
 var tabs=[['home','Dashboard'],['orders','Orders'],['stock','Stock'],['more','Settings']];
-function nav(){$('nav').innerHTML=tabs.map(function(t){return '<button class="'+(tab==t[0]?'on':'')+'" data-c="go(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')}
+function nav(){$('nav').innerHTML=tabs.map(function(t){return '<button class="'+(tab==t[0]?'on':'')+'" data-c="go(\''+t[0]+'\')"><svg viewBox="0 0 24 24">'+IC[t[0]]+'</svg>'+t[1]+'</button>'}).join('')}
 function go(t){tab=t;q='';render()}
 function lowF(){return db.frames.filter(function(f){return N(f.qty)<=N(f.min)})}
 function lowL(){return db.lenses.filter(function(l){return N(l.qty)<=N(l.min)})}
 function lname(l){return l.type+' '+(l.sph>0?'+':'')+l.sph+(N(l.cyl)?' / '+l.cyl:'')}
 function render(){nav();$('sn').textContent=db.set.shop;$('today').textContent=new Date().toDateString();({home:home,orders:orders,stock:stock,more:more})[tab]()}
-function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={};
- O.forEach(function(o){if(o.date==td)tS+=N(o.total);if(o.date.slice(0,7)==mo)mS+=N(o.total);bal+=N(o.total)-N(o.paid);ph[o.phone]=1});
- var lf=lowF(),ll=lowL(),pend=O.filter(function(o){return o.status!='Delivered'});
- $('v').innerHTML='<div class="grid"><div class="card stat"><b>'+O.filter(function(o){return o.date==td}).length+'</b><span>Aaj ke customer</span></div><div class="card stat"><b>'+rs(tS)+'</b><span>Aaj ki sale</span></div><div class="card stat"><b>'+rs(mS)+'</b><span>Is mahine ki sale</span></div><div class="card stat"><b>'+rs(bal)+'</b><span>Baqaya (udhaar)</span></div><div class="card stat"><b>'+Object.keys(ph).length+'</b><span>Kul customers</span></div><div class="card stat"><b>'+pend.length+'</b><span>Pending orders</span></div></div>'
- +(lf.length||ll.length?'<div class="card warn"><b>Low stock alert</b>'+lf.map(function(f){return '<div>Frame: '+esc(f.name)+' ('+f.qty+' bacha)</div>'}).join('')+ll.map(function(l){return '<div>Lens: '+esc(lname(l))+' ('+l.qty+' jori bachi)</div>'}).join('')+'</div>':'<div class="card m">Stock theek hai. Koi low alert nahi.</div>')
- +'<button style="width:100%;padding:14px" data-c="newOrder()">+ Naya order</button>'}
-function orders(){$('v').innerHTML='<div class="row"><input placeholder="Naam ya number se dhundein" value="'+esc(q)+'" data-i="qo(this.value)"><button data-c="newOrder()">+ Naya</button></div><div id="ol"></div>';orders2()}
+function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={},tc=0;
+ O.forEach(function(o){if(o.date==td){tS+=N(o.total);tc++}if(o.date.slice(0,7)==mo)mS+=N(o.total);bal+=N(o.total)-N(o.paid);ph[o.phone]=1});
+ var lf=lowF(),ll=lowL(),nl=lf.length+ll.length,pend=O.filter(function(o){return o.status!='Delivered'});
+ $('v').innerHTML='<div class="hero"><svg class="hg" viewBox="0 0 48 24"><circle cx="12" cy="12" r="9"/><circle cx="36" cy="12" r="9"/><path d="M21 11q3-3 6 0"/></svg><div class="hl">Aaj ki sale</div><div class="hn">'+rs(tS)+'</div><div class="hr"><div><b>'+tc+'</b><span>aaj ke customer</span></div><div><b>'+pend.length+'</b><span>pending orders</span></div></div></div>'
+ +'<div class="grid"><div class="card stat"><span>Is mahine ki sale</span><b>'+rs(mS)+'</b></div><div class="card stat"><span>Baqaya (udhaar)</span><b class="'+(bal>0?'neg':'')+'">'+rs(bal)+'</b></div><div class="card stat"><span>Kul customers</span><b>'+Object.keys(ph).length+'</b></div><div class="card stat"><span>Low stock items</span><b class="'+(nl?'neg':'')+'">'+nl+'</b></div></div>'
+ +(nl?'<div class="card warn"><b>Low stock alert</b>'+lf.map(function(f){return '<div>Frame: '+esc(f.name)+' ('+f.qty+' bacha)</div>'}).join('')+ll.map(function(l){return '<div>Lens: '+esc(lname(l))+' ('+l.qty+' jori bachi)</div>'}).join('')+'</div>':'<div class="card m">Stock theek hai. Koi low alert nahi.</div>')
+ +'<button class="fab" data-c="newOrder()">+ Naya order</button>'}
+function orders(){$('v').innerHTML='<div class="row"><input placeholder="Naam ya number se dhundein" value="'+esc(q)+'" data-i="qo(this.value)"></div><div id="ol"></div><button class="fab" data-c="newOrder()">+ Naya order</button>';orders2()}
 function qo(v){q=v;orders2()}function qs(v){q=v;st2()}function sg(v){seg=v;render()}
 function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !s||(o.name+o.phone).toLowerCase().indexOf(s)>-1}).sort(function(a,b){return b.ts-a.ts});
- $('ol').innerHTML=L.map(function(o){var b=N(o.total)-N(o.paid);return '<div class="card" data-c="detail(\''+o.id+'\')"><div class="row"><b>'+esc(o.name)+'</b><span class="tag">'+o.status+'</span></div><div class="m">#'+o.no+' | '+esc(o.phone)+' | '+o.date+'</div><div class="row"><span>'+rs(o.total)+'</span><span style="color:'+(b>0?'var(--bad)':'var(--ok)')+'">'+(b>0?'Baqaya '+rs(b):'Paid')+'</span></div></div>'}).join('')||'<p class="m">Koi order nahi mila.</p>'}
+ $('ol').innerHTML=L.map(function(o){var b=N(o.total)-N(o.paid);return '<div class="card" data-c="detail(\''+o.id+'\')"><div class="row"><span class="row" style="justify-content:flex-start"><i class="av">'+esc(o.name.trim().charAt(0).toUpperCase())+'</i><b>'+esc(o.name)+'</b></span><span class="tag st'+o.status+'">'+o.status+'</span></div><div class="m">#'+o.no+' | '+esc(o.phone)+' | '+o.date+'</div><div class="row"><span>'+rs(o.total)+'</span><span style="color:'+(b>0?'var(--bad)':'var(--ok)')+'">'+(b>0?'Baqaya '+rs(b):'Paid')+'</span></div></div>'}).join('')||'<p class="m">Koi order nahi mila.</p>'}
 function sheet(h){$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
 function close_(){$('sh').innerHTML=''}
 function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="decimal"></td>'}).join('')+'</tr>'}
@@ -103,12 +127,12 @@ function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.tot
  +'<p>Frame: '+esc(o.frame||'-')+'<br>Lens: '+esc(o.lens)+' '+esc(o.coat)+'<br>Delivery: '+(o.due||'-')+'<br>'+esc(o.note)+'</p><b>Total '+rs(o.total)+' | Advance '+rs(o.paid)+' | Baqaya '+rs(b)+'</b></div>'
  +'<label>Status</label><select data-h="stat(\''+id+'\',this.value)">'+['Ordered','Ready','Delivered'].map(function(s){return '<option'+(s==o.status?' selected':'')+'>'+s+'</option>'}).join('')+'</select>'
  +(b>0?'<div class="row"><input id="rp" inputmode="numeric" placeholder="Payment mili"><button data-c="pay(\''+id+'\')">Add</button></div>':'')
- +'<div class="bar"><button data-c="dl(\''+id+'\')">PDF Download</button></div><div class="bar"><button class="g" data-c="share(\''+id+'\')">Share (WhatsApp)</button><a target="_blank" rel="noopener" href="https://wa.me/'+o.phone+'?text='+encodeURIComponent(msg(o))+'" style="display:block;text-align:center;text-decoration:none;border:1px solid var(--pri);color:var(--pri);border-radius:10px;padding:10px 14px;font-weight:600">WhatsApp kholein</a></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
+ +'<div class="bar"><button data-c="sendWA(\''+id+'\')">WhatsApp par slip bhejein</button></div><div class="bar"><button class="g" data-c="dl(\''+id+'\')">PDF Download</button><button class="g" data-c="share(\''+id+'\')">PDF file share</button></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
 async function stat(id,s){var r=await SB.from('orders').update({status:s}).eq('id',id);if(bad(r))return;db.orders.find(function(x){return x.id==id}).status=s;toast(s);render()}
 async function pay(id){var v=N($('rp').value);if(!v)return;var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v,r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
 async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});db.orders.forEach(function(o,i){o.no=i+1});close_();render()}
-function msg(o){var b=N(o.total)-N(o.paid),r=function(e){var x=o.rx[e]||{};return e+': SPH '+(x.sph||'-')+' CYL '+(x.cyl||'-')+' AXIS '+(x.axis||'-')+(x.add?' ADD '+x.add:'')};
- return '*'+db.set.shop+'*\nOrder #'+o.no+' ('+o.date+')\nNaam: '+o.name+'\n'+r('R')+'\n'+r('L')+'\nFrame: '+(o.frame||'-')+'\nLens: '+o.lens+' '+(o.coat||'')+'\nTotal: '+rs(o.total)+'\nAdvance: '+rs(o.paid)+'\nBaqaya: '+rs(b)+'\nDelivery: '+(o.due||'-')+'\nShukriya!'}
+function msg(o,u){var b=N(o.total)-N(o.paid),r=function(e){var x=o.rx[e]||{};return e+': SPH '+(x.sph||'-')+' CYL '+(x.cyl||'-')+' AXIS '+(x.axis||'-')+(x.add?' ADD '+x.add:'')};
+ return '*'+db.set.shop+'*\nOrder #'+o.no+' ('+o.date+')\nNaam: '+o.name+'\n'+r('R')+'\n'+r('L')+'\nFrame: '+(o.frame||'-')+'\nLens: '+o.lens+' '+(o.coat||'')+'\nTotal: '+rs(o.total)+'\nAdvance: '+rs(o.paid)+'\nBaqaya: '+rs(b)+'\nDelivery: '+(o.due||'-')+'\nShukriya!'+(u?'\n\nApni slip (PDF) yahan se kholein:\n'+u:'')}
 function pdf2(o){var J=window.jspdf;if(!J)return null;var d=new J.jsPDF({unit:'mm',format:'a5'}),b=N(o.total)-N(o.paid),T=[15,92,110],A=[232,163,61],G=[110,125,130],K=[18,48,58];
  d.setFillColor(T[0],T[1],T[2]);d.rect(0,0,148,34,'F');d.setFillColor(A[0],A[1],A[2]);d.rect(0,34,148,1.6,'F');
  d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(21);d.text(db.set.shop,74,15,{align:'center'});d.setFont('helvetica','normal');d.setFontSize(10);d.text(db.set.phone?('Tel: '+db.set.phone):'Eye Care & Optical',74,23,{align:'center'});d.setFontSize(8);d.text('Eyeglasses | Lenses | Eye Testing',74,29,{align:'center'});
@@ -124,6 +148,11 @@ function pdf2(o){var J=window.jspdf;if(!J)return null;var d=new J.jsPDF({unit:'m
  d.setFillColor(238,245,247);d.roundedRect(10,154,128,36,3,3,'F');d.setFont('helvetica','normal');d.setFontSize(10);d.setTextColor(G[0],G[1],G[2]);d.text('Total',16,163);d.text('Advance',16,171);d.setTextColor(K[0],K[1],K[2]);d.setFont('helvetica','bold');d.text(rs(o.total),132,163,{align:'right'});d.text(rs(o.paid),132,171,{align:'right'});
  d.setFillColor(b>0?A[0]:30,b>0?A[1]:140,b>0?A[2]:80);d.roundedRect(14,175,120,11,2.5,2.5,'F');d.setTextColor(255,255,255);d.setFontSize(11);d.text(b>0?'Baqaya (Balance)':'Payment Complete',19,182.2);d.setFontSize(12);d.text(b>0?rs(b):'Paid',129,182.2,{align:'right'});
  d.setTextColor(G[0],G[1],G[2]);d.setFont('helvetica','normal');d.setFontSize(9);if(o.note)d.text('Note: '+o.note.slice(0,70),10,197);d.setTextColor(T[0],T[1],T[2]);d.setFont('helvetica','bold');d.setFontSize(10);d.text('Shukriya! Dobara tashreef layein.',74,205,{align:'center'});return d}
+async function sendWA(id){var o=db.orders.find(function(x){return x.id==id}),d=pdf2(o),u='';
+ if(d){toast('Slip upload ho rahi hai...');try{var p=U.id+'/'+uid()+'.pdf',up=await SB.storage.from('slips').upload(p,d.output('blob'),{contentType:'application/pdf'});
+  if(up.error)throw up.error;u=SB.storage.from('slips').getPublicUrl(p).data.publicUrl}catch(e){u='';toast('Slip upload nahi hui ('+(e.message||'error')+'). Sirf message khul raha hai')}}
+ location.href='https://wa.me/'+o.phone+'?text='+encodeURIComponent(msg(o,u))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function fname(o){return 'Slip-'+o.no+'-'+o.name.replace(/[^A-Za-z0-9]+/g,'_')+'.pdf'}
 function dl(id){var o=db.orders.find(function(x){return x.id==id}),d=pdf2(o);if(!d)return toast('PDF load nahi hua, internet check karein');d.save(fname(o));toast('PDF save ho rahi hai')}
 async function share(id){var o=db.orders.find(function(x){return x.id==id}),d=pdf2(o);if(!d)return toast('PDF load nahi hua, internet check karein');
@@ -157,5 +186,6 @@ function runA(el,attr){var a=el.getAttribute(attr),m=a&&a.match(/^(\w+)\((.*)\)$
 document.addEventListener('click',function(e){var el=e.target;while(el&&el!==document){if(el.getAttribute&&el.getAttribute('data-c')){runA(el,'data-c');return}el=el.parentNode}});
 document.addEventListener('input',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-i'))runA(el,'data-i')});
 document.addEventListener('change',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-h'))runA(el,'data-h')});
+$('lg').innerHTML=LOGO;
 boot();
 </script></body></html>
