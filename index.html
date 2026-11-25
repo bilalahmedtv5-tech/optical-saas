@@ -42,16 +42,19 @@ var N=function(x){return Number(x)||0},rs=function(x){return (db.set.currency||'
 function toast(m){var t=$('t');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},2600)}
 function bad(r){if(r&&r.error){toast(r.error.message);return true}return false}
 /* ---------- login ---------- */
-function authUI(){$('nav').innerHTML='';$('sn').textContent='Optical Shop Manager';$('today').textContent='Apni dukaan ka account';
- $('v').innerHTML='<div class="card"><label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button data-c="login()">Login</button><button class="g" data-c="signup()">Naya account</button></div></div>'}
+var mode='login';
+function authUI(m){if(m)mode=m;var reg=mode=='reg';$('nav').innerHTML='';$('sn').textContent='Optical Shop Manager';$('today').textContent=reg?'Naya account banayein':'Login';
+ $('v').innerHTML='<div class="card">'+(reg?'<label>Shop ka naam (zaroori)</label><input id="sh1" placeholder="Jaise: Noor Opticals">':'')+'<label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="'+(reg?'new-password':'current-password')+'"><div class="bar"><button data-c="'+(reg?'signup()':'login()')+'">'+(reg?'Account banayein':'Login')+'</button></div><div class="bar"><button class="g" data-c="authUI(\''+(reg?'login':'reg')+'\')">'+(reg?'Pehle se account hai? Login':'Naya account banayein')+'</button></div></div>'}
 async function login(){var r=await SB.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(bad(r))return;boot()}
-async function signup(){var r=await SB.auth.signUp({email:$('em').value.trim(),password:$('pw').value});if(bad(r))return;if(r.data.session)boot();else toast('Email check karein aur confirm link dabayein, phir Login karein')}
+async function signup(){var shop=$('sh1').value.trim();if(!shop)return toast('Shop ka naam likhna zaroori hai');
+ var r=await SB.auth.signUp({email:$('em').value.trim(),password:$('pw').value,options:{data:{shop:shop}}});if(bad(r))return;
+ if(r.data.session)boot();else{toast('Email check karein, confirm link dabayein, phir Login karein');authUI('login')}}
 async function logout(){await SB.auth.signOut();U=null;db.orders=[];db.frames=[];db.lenses=[];authUI()}
 async function boot(){var s=await SB.auth.getSession();if(!s.data.session)return authUI();U=s.data.session.user;await load();render()}
 async function load(){var r=await Promise.all([SB.from('orders').select('*').order('created_at'),SB.from('frames').select('*').order('created_at'),SB.from('lenses').select('*').order('created_at'),SB.from('settings').select('*').maybeSingle()]);
  if(bad(r[0])||bad(r[1])||bad(r[2]))return;
  db.orders=r[0].data.map(function(o,i){o.no=i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
- db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data)}
+ db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data);else{var sh=(U.user_metadata&&U.user_metadata.shop)||db.set.shop;db.set.shop=sh;await SB.from('settings').upsert({user_id:U.id,shop:sh,phone:'',currency:'Rs'})}}
 /* ---------- app ---------- */
 var tabs=[['home','Dashboard'],['orders','Orders'],['stock','Stock'],['more','Settings']];
 function nav(){$('nav').innerHTML=tabs.map(function(t){return '<button class="'+(tab==t[0]?'on':'')+'" data-c="go(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')}
