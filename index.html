@@ -55,6 +55,9 @@ table{width:100%;border-collapse:collapse;text-align:center}td,th{padding:3px}th
 <script>
 var LOGO='<svg viewBox="0 0 48 24"><circle cx="12" cy="12" r="9"/><circle cx="36" cy="12" r="9"/><path d="M21 11q3-3 6 0"/></svg>';
 var SB_URL='https://tthgtvrumnlhruzlostw.supabase.co',SB_KEY='sb_publishable_49rc2JYcuiAP5YdfZcXi1g_RdsJkBh3';
+var PAY={name:'',ep:'03011052305',jc:''};
+var PLANS={basic:{n:'Basic',p:1200},pro:{n:'Pro',p:2500}};
+var DUR=[[1,1,'1 mahina'],[3,3,'3 mahine'],[12,10,'12 mahine (2 mahine free)']];
 var SB=supabase.createClient(SB_URL,SB_KEY),U=null,tab='home',seg='frames',q='';
 var db={orders:[],frames:[],lenses:[],set:{shop:'My Optical Shop',phone:'',currency:'Rs'}};
 var $=function(i){return document.getElementById(i)};
@@ -76,7 +79,7 @@ async function boot(){var s=await SB.auth.getSession();if(!s.data.session)return
 async function load(){var r=await Promise.all([SB.from('orders').select('*').order('created_at'),SB.from('frames').select('*').order('created_at'),SB.from('lenses').select('*').order('created_at'),SB.from('settings').select('*').maybeSingle()]);
  if(bad(r[0])||bad(r[1])||bad(r[2]))return;
  db.orders=r[0].data.map(function(o,i){o.no=i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
- db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data);else{var sh=(U.user_metadata&&U.user_metadata.shop)||db.set.shop;db.set.shop=sh;await SB.from('settings').upsert({user_id:U.id,shop:sh,phone:'',currency:'Rs'})}}
+ db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data);else{var sh=(U.user_metadata&&U.user_metadata.shop)||db.set.shop;db.set.shop=sh;await SB.from('settings').upsert({user_id:U.id,shop:sh,phone:'',currency:'Rs'})}await loadSub()}
 /* ---------- app ---------- */
 var IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',orders:'<path d="M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4"/>',stock:'<path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',more:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'};
 var tabs=[['home','Dashboard'],['orders','Orders'],['stock','Stock'],['more','Settings']];
@@ -92,7 +95,7 @@ function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={},
  $('v').innerHTML='<div class="hero"><svg class="hg" viewBox="0 0 48 24"><circle cx="12" cy="12" r="9"/><circle cx="36" cy="12" r="9"/><path d="M21 11q3-3 6 0"/></svg><div class="hl">Aaj ki sale</div><div class="hn">'+rs(tS)+'</div><div class="hr"><div><b>'+tc+'</b><span>aaj ke customer</span></div><div><b>'+pend.length+'</b><span>pending orders</span></div></div></div>'
  +'<div class="grid"><div class="card stat"><span>Is mahine ki sale</span><b>'+rs(mS)+'</b></div><div class="card stat"><span>Baqaya (udhaar)</span><b class="'+(bal>0?'neg':'')+'">'+rs(bal)+'</b></div><div class="card stat"><span>Kul customers</span><b>'+Object.keys(ph).length+'</b></div><div class="card stat"><span>Low stock items</span><b class="'+(nl?'neg':'')+'">'+nl+'</b></div></div>'
  +(nl?'<div class="card warn"><b>Low stock alert</b>'+lf.map(function(f){return '<div>Frame: '+esc(f.name)+' ('+f.qty+' bacha)</div>'}).join('')+ll.map(function(l){return '<div>Lens: '+esc(lname(l))+' ('+l.qty+' jori bachi)</div>'}).join('')+'</div>':'<div class="card m">Stock theek hai. Koi low alert nahi.</div>')
- +'<button class="fab" data-c="newOrder()">+ Naya order</button>'}
+ +planBar()+'<button class="fab" data-c="newOrder()">+ Naya order</button>'}
 function orders(){$('v').innerHTML='<div class="row"><input placeholder="Naam ya number se dhundein" value="'+esc(q)+'" data-i="qo(this.value)"></div><div id="ol"></div><button class="fab" data-c="newOrder()">+ Naya order</button>';orders2()}
 function qo(v){q=v;orders2()}function qs(v){q=v;st2()}function sg(v){seg=v;render()}
 function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !s||(o.name+o.phone).toLowerCase().indexOf(s)>-1}).sort(function(a,b){return b.ts-a.ts});
@@ -121,6 +124,7 @@ async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/
   var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;close_();toast('Order update ho gaya');render();detail(id2);return}
  var f=db.frames.find(function(x){return x.id==$('fs').value}),l=db.lenses.find(function(x){return x.id==$('ls').value});
  if(f&&N(f.qty)<1)return toast('Ye frame stock mein khatam hai');if(l&&N(l.qty)<1)return toast('Ye lens stock mein khatam hai');
+ if(plan()=='free'&&monthCount()>=30){close_();toast('Free plan ki limit (30 orders) poori. Upgrade karein');return plans()}
  var row={name:n,phone:p,rx:rx,frame:f?f.name:$('fn').value.trim(),lens:$('lt').value+(l?' ['+lname(l)+']':''),coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim(),status:'Ordered'};
  var r=await SB.from('orders').insert(row).select().single();if(bad(r))return;
  if(f){f.qty=N(f.qty)-1;await SB.from('frames').update({qty:f.qty}).eq('id',f.id)}
@@ -184,8 +188,35 @@ async function adj(id,n){var t=db.frames.some(function(z){return z.id==id})?'fra
 async function rm(id){if(!confirm('Hata dein?'))return;var t=db.frames.some(function(z){return z.id==id})?'frames':'lenses',r=await SB.from(t).delete().eq('id',id);if(bad(r))return;db[t]=db[t].filter(function(z){return z.id!=id});st2()}
 /* ---------- settings ---------- */
 function more(){$('v').innerHTML='<div class="card"><b>Shop details (slip par aayengi)</b><input id="sp" placeholder="Shop ka naam" value="'+esc(db.set.shop)+'"><input id="sq" placeholder="Shop ka number" value="'+esc(db.set.phone)+'"><input id="sc" placeholder="Currency (Rs, $, AED...)" value="'+esc(db.set.currency)+'"><button data-c="setS()">Save</button></div>'
- +'<div class="card"><div class="m">Login: '+esc(U&&U.email)+'</div><p class="m">Aap ka data online mehfooz hai, kisi bhi phone par login karke khul jata hai.</p><button class="g" data-c="logout()">Logout</button></div>'}
+ +planCard()+'<div class="card"><div class="m">Login: '+esc(U&&U.email)+'</div><p class="m">Aap ka data online mehfooz hai, kisi bhi phone par login karke khul jata hai.</p><button class="g" data-c="logout()">Logout</button></div>'}
 async function setS(){var s={user_id:U.id,shop:$('sp').value||'My Optical Shop',phone:$('sq').value,currency:$('sc').value||'Rs'},r=await SB.from('settings').upsert(s);if(bad(r))return;db.set=Object.assign(db.set,s);toast('Save ho gaya');render()}
+/* ---------- plan aur payment ---------- */
+var pk=function(x){return 'Rs '+N(x).toLocaleString('en-US')};
+async function loadSub(){db.sub={plan:'free',expires_at:null};db.isAdmin=false;try{var a=await SB.from('subscriptions').select('*').maybeSingle();if(a.data)db.sub=a.data;var b=await SB.from('admins').select('user_id').maybeSingle();db.isAdmin=!!b.data}catch(e){}}
+function plan(){return db.sub&&db.sub.expires_at&&new Date(db.sub.expires_at)>new Date()&&PLANS[db.sub.plan]?db.sub.plan:'free'}
+function monthCount(){var m=iso().slice(0,7);return db.orders.filter(function(o){return o.date.slice(0,7)==m}).length}
+function planBar(){var p=plan();if(p=='free')return '<div class="card row"><div><b>Free plan</b><div class="m">'+monthCount()+' / 30 orders is mahine</div></div><button class="s" data-c="plans()">Upgrade</button></div>';
+ var d=Math.ceil((new Date(db.sub.expires_at)-new Date())/864e5);return d<=7?'<div class="card warn row"><b>'+PLANS[p].n+' plan '+d+' din mein khatam</b><button class="s" data-c="plans()">Renew</button></div>':''}
+function planCard(){var p=plan();return '<div class="card"><div class="row"><div><div class="m">Aap ka plan</div><b>'+(p=='free'?'Free':PLANS[p].n)+'</b>'+(p!='free'?'<div class="m">'+new Date(db.sub.expires_at).toDateString()+' tak</div>':'')+'</div><button class="s" data-c="plans()">Plan / Payment</button></div>'+(db.isAdmin?'<div class="bar"><button class="g" data-c="admin()">Admin: payment requests</button></div>':'')+'</div>'}
+async function plans(){await loadSub();var p=plan(),h=await SB.from('payments').select('*').order('created_at',{ascending:false}).limit(5),
+ cur=p=='free'?'Free (30 orders/mahina)':PLANS[p].n+' - '+new Date(db.sub.expires_at).toDateString()+' tak';
+ sheet('<div class="row"><h3>Plan aur payment</h3><button class="g s" data-c="close_()">Band</button></div><div class="card"><div class="m">Mojooda plan</div><b>'+cur+'</b></div>'
+ +'<div class="card"><b>Basic</b> '+pk(PLANS.basic.p)+'/mahina<div class="m">Unlimited orders, stock alerts, PDF slip</div><br><b>Pro</b> '+pk(PLANS.pro.p)+'/mahina<div class="m">Basic + staff accounts aur reports (jald aa rahe hain)</div></div>'
+ +'<div class="card"><label>Plan chunein</label><select id="pl" data-h="calc()">'+Object.keys(PLANS).map(function(k){return '<option value="'+k+'">'+PLANS[k].n+'</option>'}).join('')+'</select>'
+ +'<label>Kitne mahine</label><select id="du" data-h="calc()">'+DUR.map(function(d,i){return '<option value="'+i+'">'+d[2]+'</option>'}).join('')+'</select>'
+ +'<div class="hn" id="amt" style="color:var(--pri);font-size:26px;margin:8px 0"></div>'
+ +'<div class="m">Ye raqam is number par bhejein (Easypaisa):<br><b style="font-size:17px">'+esc(PAY.ep)+'</b>'+(PAY.jc?'<br>JazzCash: <b>'+esc(PAY.jc)+'</b>':'')+(PAY.name?'<br>Account naam: '+esc(PAY.name):'')+'</div>'
+ +'<label>Kahan se bheja</label><select id="mt"><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select><label>Transaction ID (TID)</label><input id="tx" placeholder="Payment ka transaction ID">'
+ +'<button style="width:100%" data-c="payReq()">Payment request bhejein</button><p class="m">Payment check hote hi plan chalu ho jata hai (aam tor par kuch ghanton mein).</p></div>'
+ +((h.data||[]).length?'<div class="card"><b>Meri requests</b>'+h.data.map(function(x){return '<div class="row m"><span>'+PLANS[x.plan].n+' | '+pk(x.amount)+' | '+new Date(x.created_at).toLocaleDateString()+'</span><span class="tag '+(x.status=='approved'?'stDelivered':x.status=='rejected'?'low':'stOrdered')+'">'+x.status+'</span></div>'}).join('')+'</div>':''));calc()}
+function calc(){var pl=$('pl').value,d=DUR[N($('du').value)];$('amt').textContent=pk(PLANS[pl].p*d[1])}
+async function payReq(){var pl=$('pl').value,d=DUR[N($('du').value)],t=$('tx').value.trim();if(t.length<4)return toast('Transaction ID likhein');
+ var r=await SB.from('payments').insert({plan:pl,months:d[0],amount:PLANS[pl].p*d[1],method:$('mt').value,txn:t});if(bad(r))return;toast('Request bhej di gayi');plans()}
+async function admin(){var r=await SB.rpc('admin_payments');if(bad(r))return;
+ sheet('<div class="row"><h3>Payment requests</h3><button class="g s" data-c="close_()">Band</button></div>'+(r.data||[]).map(function(p){return '<div class="card"><div class="row"><b>'+esc(p.shop||'-')+'</b><span class="tag">'+p.status+'</span></div><div class="m">'+esc(p.email)+'<br>'+p.plan+' | '+p.months+' mahine | '+pk(p.amount)+'<br>'+esc(p.method)+' | TID: '+esc(p.txn)+'<br>'+new Date(p.created_at).toLocaleString()+'</div>'
+ +(p.status=='pending'?'<div class="bar"><button data-c="appr(\''+p.id+'\')">Approve</button><button class="d" data-c="rej(\''+p.id+'\')">Reject</button></div>':'')+'</div>'}).join('')||'<p class="m">Koi request nahi.</p>')}
+async function appr(id){var r=await SB.rpc('approve_payment',{pid:id});if(bad(r))return;toast('Approve ho gaya');admin()}
+async function rej(id){var r=await SB.rpc('reject_payment',{pid:id});if(bad(r))return;toast('Reject ho gaya');admin()}
 /* ---------- events ---------- */
 function runA(el,attr){var a=el.getAttribute(attr),m=a&&a.match(/^(\w+)\((.*)\)$/);if(!m||typeof window[m[1]]!=='function')return;
  var args=m[2]===''?[]:m[2].split(',').map(function(x){x=x.trim();if(x==='this.value')return el.value;if(/^'.*'$/.test(x))return x.slice(1,-1);return Number(x)});window[m[1]].apply(null,args)}
