@@ -84,7 +84,9 @@ async function load(){var r=await Promise.all([SB.from('orders').select('*').ord
 var IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',orders:'<path d="M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4"/>',stock:'<path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',more:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'};
 var tabs=[['home','Dashboard'],['orders','Orders'],['stock','Stock'],['more','Settings']];
 function nav(){$('nav').innerHTML=tabs.map(function(t){return '<button class="'+(tab==t[0]?'on':'')+'" data-c="go(\''+t[0]+'\')"><svg viewBox="0 0 24 24">'+IC[t[0]]+'</svg>'+t[1]+'</button>'}).join('')}
-function go(t){tab=t;q='';render()}
+var sheetDepth=false;
+function go(t){var was=tab;if(t=='home'&&was!='home'){history.back();return}if(t!='home'&&was=='home')history.pushState({t:1},'');tab=t;q='';render()}
+window.addEventListener('popstate',function(){if(sheetDepth){sheetDepth=false;editId=null;$('sh').innerHTML='';return}if(!U)return;if(tab!='home'){tab='home';q='';render()}});
 function lowF(){return db.frames.filter(function(f){return N(f.qty)<=N(f.min)})}
 function lowL(){return db.lenses.filter(function(l){return N(l.qty)<=N(l.min)})}
 function lname(l){return l.type+' '+(l.sph>0?'+':'')+l.sph+(N(l.cyl)?' / '+l.cyl:'')}
@@ -100,8 +102,9 @@ function orders(){$('v').innerHTML='<div class="row"><input placeholder="Naam ya
 function qo(v){q=v;orders2()}function qs(v){q=v;st2()}function sg(v){seg=v;render()}
 function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !s||(o.name+o.phone).toLowerCase().indexOf(s)>-1}).sort(function(a,b){return b.ts-a.ts});
  $('ol').innerHTML=L.map(function(o){var b=N(o.total)-N(o.paid);return '<div class="card" data-c="detail(\''+o.id+'\')"><div class="row"><span class="row" style="justify-content:flex-start"><i class="av">'+esc(o.name.trim().charAt(0).toUpperCase())+'</i><b>'+esc(o.name)+'</b></span><span class="tag st'+o.status+'">'+o.status+'</span></div><div class="m">#'+o.no+' | '+esc(o.phone)+' | '+o.date+'</div><div class="row"><span>'+rs(o.total)+'</span><span style="color:'+(b>0?'var(--bad)':'var(--ok)')+'">'+(b>0?'Baqaya '+rs(b):'Paid')+'</span></div></div>'}).join('')||'<p class="m">Koi order nahi mila.</p>'}
-function sheet(h){$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
-function close_(){editId=null;$('sh').innerHTML=''}
+function sheet(h){if(!sheetDepth){history.pushState({s:1},'');sheetDepth=true}$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
+function close_(){editId=null;if(sheetDepth)history.back();else $('sh').innerHTML=''}
+function closeSoft(){editId=null;$('sh').innerHTML=''}
 function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="decimal"></td>'}).join('')+'</tr>'}
 var editId=null;
 function newOrder(eid){var E=eid?db.orders.find(function(x){return x.id==eid}):null;editId=E?E.id:null;var fo=db.frames.map(function(f){return '<option value="'+f.id+'">'+esc(f.name)+' ('+f.qty+')</option>'}).join(''),lo=db.lenses.map(function(l){return '<option value="'+l.id+'">'+esc(lname(l))+' ('+l.qty+')</option>'}).join('');
@@ -121,16 +124,16 @@ async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/
  var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=$(e+k).value.trim()})});
  if(editId){var eo=db.orders.find(function(x){return x.id==editId}),sfx=(eo.lens.match(/ \[.*\]$/)||[''])[0],
   ur={name:n,phone:p,rx:rx,frame:$('fn').value.trim(),lens:$('lt').value+sfx,coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim()};
-  var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;close_();toast('Order update ho gaya');render();detail(id2);return}
+  var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;closeSoft();toast('Order update ho gaya');render();detail(id2);return}
  var f=db.frames.find(function(x){return x.id==$('fs').value}),l=db.lenses.find(function(x){return x.id==$('ls').value});
  if(f&&N(f.qty)<1)return toast('Ye frame stock mein khatam hai');if(l&&N(l.qty)<1)return toast('Ye lens stock mein khatam hai');
- if(plan()=='free'&&monthCount()>=30){close_();toast('Free plan ki limit (30 orders) poori. Upgrade karein');return plans()}
+ if(plan()=='free'&&monthCount()>=30){closeSoft();toast('Free plan ki limit (30 orders) poori. Upgrade karein');return plans()}
  var row={name:n,phone:p,rx:rx,frame:f?f.name:$('fn').value.trim(),lens:$('lt').value+(l?' ['+lname(l)+']':''),coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim(),status:'Ordered'};
  var r=await SB.from('orders').insert(row).select().single();if(bad(r))return;
  if(f){f.qty=N(f.qty)-1;await SB.from('frames').update({qty:f.qty}).eq('id',f.id)}
  if(l){l.qty=N(l.qty)-1;await SB.from('lenses').update({qty:l.qty}).eq('id',l.id)}
  var o=r.data;o.no=db.orders.length+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();db.orders.push(o);
- close_();toast('Order save ho gaya');render();detail(o.id)}
+ closeSoft();toast('Order save ho gaya');render();detail(o.id)}
 function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.total)-N(o.paid);
  sheet('<div class="row"><h3>#'+o.no+' '+esc(o.name)+'</h3><button class="g s" data-c="close_()">Band</button></div><div class="card"><div>'+esc(o.phone)+' | '+o.date+'</div><table><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>'
  +['R','L'].map(function(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td>'+esc((o.rx[e]||{})[k]||'-')+'</td>'}).join('')+'</tr>'}).join('')+'</table>'
