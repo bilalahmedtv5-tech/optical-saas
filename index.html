@@ -98,21 +98,27 @@ function qo(v){q=v;orders2()}function qs(v){q=v;st2()}function sg(v){seg=v;rende
 function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !s||(o.name+o.phone).toLowerCase().indexOf(s)>-1}).sort(function(a,b){return b.ts-a.ts});
  $('ol').innerHTML=L.map(function(o){var b=N(o.total)-N(o.paid);return '<div class="card" data-c="detail(\''+o.id+'\')"><div class="row"><span class="row" style="justify-content:flex-start"><i class="av">'+esc(o.name.trim().charAt(0).toUpperCase())+'</i><b>'+esc(o.name)+'</b></span><span class="tag st'+o.status+'">'+o.status+'</span></div><div class="m">#'+o.no+' | '+esc(o.phone)+' | '+o.date+'</div><div class="row"><span>'+rs(o.total)+'</span><span style="color:'+(b>0?'var(--bad)':'var(--ok)')+'">'+(b>0?'Baqaya '+rs(b):'Paid')+'</span></div></div>'}).join('')||'<p class="m">Koi order nahi mila.</p>'}
 function sheet(h){$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
-function close_(){$('sh').innerHTML=''}
+function close_(){editId=null;$('sh').innerHTML=''}
 function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="decimal"></td>'}).join('')+'</tr>'}
-function newOrder(){var fo=db.frames.map(function(f){return '<option value="'+f.id+'">'+esc(f.name)+' ('+f.qty+')</option>'}).join(''),lo=db.lenses.map(function(l){return '<option value="'+l.id+'">'+esc(lname(l))+' ('+l.qty+')</option>'}).join('');
- sheet('<h3>Naya order</h3><label>Naam</label><input id="n"><label>WhatsApp number (923001234567)</label><input id="p" inputmode="tel" data-i="fill()"><div id="hist" class="m"></div>'
+var editId=null;
+function newOrder(eid){var E=eid?db.orders.find(function(x){return x.id==eid}):null;editId=E?E.id:null;var fo=db.frames.map(function(f){return '<option value="'+f.id+'">'+esc(f.name)+' ('+f.qty+')</option>'}).join(''),lo=db.lenses.map(function(l){return '<option value="'+l.id+'">'+esc(lname(l))+' ('+l.qty+')</option>'}).join('');
+ sheet('<h3>'+(E?'Order edit karein':'Naya order')+'</h3><label>Naam</label><input id="n"><label>WhatsApp number (923001234567)</label><input id="p" inputmode="tel" data-i="fill()"><div id="hist" class="m"></div>'
  +'<label>Aankh ka number</label><table><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>'+rxrow('R')+rxrow('L')+'</table>'
- +'<label>Frame (stock se)</label><select id="fs"><option value="">-- Stock se nahi / apna --</option>'+fo+'</select><input id="fn" placeholder="Frame ka naam (agar stock se nahi)">'
- +'<label>Lens (stock se)</label><select id="ls"><option value="">-- Stock se nahi --</option>'+lo+'</select>'
+ +'<div id="stk"><label>Frame (stock se)</label><select id="fs"><option value="">-- Stock se nahi / apna --</option>'+fo+'</select><input id="fn" placeholder="Frame ka naam (agar stock se nahi)">'
+ +'<label>Lens (stock se)</label><select id="ls"><option value="">-- Stock se nahi --</option>'+lo+'</select></div>'
  +'<label>Lens type</label><select id="lt"><option>Single Vision</option><option>Bifocal</option><option>Progressive</option><option>Blue Cut</option><option>Photochromic</option></select><input id="co" placeholder="Coating (AR, UV, etc.)">'
  +'<div class="grid"><div><label>Kul price</label><input id="tt" inputmode="numeric"></div><div><label>Advance</label><input id="pd" inputmode="numeric"></div></div><label>Delivery date</label><input id="dd" type="date"><label>Note</label><input id="nt">'
- +'<div class="bar"><button class="g" data-c="close_()">Cancel</button><button data-c="saveO()">Save order</button></div>')}
+ +'<div class="bar"><button class="g" data-c="close_()">Cancel</button><button data-c="saveO()">'+(E?'Update karein':'Save order')+'</button></div>');if(E)fillEdit(E)}
+function fillEdit(o){$('stk').style.display='none';$('n').value=o.name;$('p').value=o.phone;['R','L'].forEach(function(e){['sph','cyl','axis','add'].forEach(function(k){$(e+k).value=(o.rx[e]||{})[k]||''})});
+ $('fn').value=o.frame||'';$('fn').placeholder='Frame ka naam';$('lt').value=o.lens.replace(/ \[.*\]$/,'');$('co').value=o.coat||'';$('tt').value=o.total;$('pd').value=o.paid;$('dd').value=o.due||'';$('nt').value=o.note||''}
 function fill(){var p=$('p').value.trim().replace(/\D/g,''),h=db.orders.filter(function(o){return o.phone==p}).sort(function(a,b){return b.ts-a.ts})[0];
  $('hist').innerHTML=h?'Purana customer: '+esc(h.name)+' <button class="s g" data-c="useRx(\''+h.id+'\')">Purana number lagayein</button>':''}
 function useRx(id){var o=db.orders.find(function(x){return x.id==id});['R','L'].forEach(function(e){['sph','cyl','axis','add'].forEach(function(k){$(e+k).value=(o.rx[e]||{})[k]||''})});$('n').value=o.name}
 async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/\D/g,'');if(!n||!p)return toast('Naam aur number zaroori');
  var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=$(e+k).value.trim()})});
+ if(editId){var eo=db.orders.find(function(x){return x.id==editId}),sfx=(eo.lens.match(/ \[.*\]$/)||[''])[0],
+  ur={name:n,phone:p,rx:rx,frame:$('fn').value.trim(),lens:$('lt').value+sfx,coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim()};
+  var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;close_();toast('Order update ho gaya');render();detail(id2);return}
  var f=db.frames.find(function(x){return x.id==$('fs').value}),l=db.lenses.find(function(x){return x.id==$('ls').value});
  if(f&&N(f.qty)<1)return toast('Ye frame stock mein khatam hai');if(l&&N(l.qty)<1)return toast('Ye lens stock mein khatam hai');
  var row={name:n,phone:p,rx:rx,frame:f?f.name:$('fn').value.trim(),lens:$('lt').value+(l?' ['+lname(l)+']':''),coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim(),status:'Ordered'};
@@ -127,7 +133,7 @@ function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.tot
  +'<p>Frame: '+esc(o.frame||'-')+'<br>Lens: '+esc(o.lens)+' '+esc(o.coat)+'<br>Delivery: '+(o.due||'-')+'<br>'+esc(o.note)+'</p><b>Total '+rs(o.total)+' | Advance '+rs(o.paid)+' | Baqaya '+rs(b)+'</b></div>'
  +'<label>Status</label><select data-h="stat(\''+id+'\',this.value)">'+['Ordered','Ready','Delivered'].map(function(s){return '<option'+(s==o.status?' selected':'')+'>'+s+'</option>'}).join('')+'</select>'
  +(b>0?'<div class="row"><input id="rp" inputmode="numeric" placeholder="Payment mili"><button data-c="pay(\''+id+'\')">Add</button></div>':'')
- +'<div class="bar"><button data-c="sendWA(\''+id+'\')">WhatsApp par slip bhejein</button></div><div class="bar"><button class="g" data-c="dl(\''+id+'\')">PDF Download</button><button class="g" data-c="share(\''+id+'\')">PDF file share</button></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
+ +'<div class="bar"><button class="g" data-c="newOrder(\''+id+'\')">Order edit karein</button></div><div class="bar"><button data-c="sendWA(\''+id+'\')">WhatsApp par slip bhejein</button></div><div class="bar"><button class="g" data-c="dl(\''+id+'\')">PDF Download</button><button class="g" data-c="share(\''+id+'\')">PDF file share</button></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
 async function stat(id,s){var r=await SB.from('orders').update({status:s}).eq('id',id);if(bad(r))return;db.orders.find(function(x){return x.id==id}).status=s;toast(s);render()}
 async function pay(id){var v=N($('rp').value);if(!v)return;var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v,r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
 async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});db.orders.forEach(function(o,i){o.no=i+1});close_();render()}
