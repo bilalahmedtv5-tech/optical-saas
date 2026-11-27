@@ -86,7 +86,7 @@ async function logout(){await SB.auth.signOut();U=null;db.orders=[];db.frames=[]
 async function boot(){var s=await SB.auth.getSession();if(recovering&&s.data.session)return recoveryUI();recovering=false;if(!s.data.session)return authUI();U=s.data.session.user;await load();render()}
 async function load(){var r=await Promise.all([SB.from('orders').select('*').order('created_at'),SB.from('frames').select('*').order('created_at'),SB.from('lenses').select('*').order('created_at'),SB.from('settings').select('*').maybeSingle()]);
  if(bad(r[0])||bad(r[1])||bad(r[2]))return;
- db.orders=r[0].data.map(function(o,i){o.no=i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
+ db.orders=r[0].data.map(function(o,i){o.no=o.order_no||i+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();o.rx=o.rx||{R:{},L:{}};return o});
  db.frames=r[1].data;db.lenses=r[2].data;if(r[3].data)db.set=Object.assign(db.set,r[3].data);else{var sh=(U.user_metadata&&U.user_metadata.shop)||db.set.shop;db.set.shop=sh;await SB.from('settings').upsert({user_id:U.id,shop:sh,phone:'',currency:'Rs'})}await loadSub()}
 /* ---------- app ---------- */
 var IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',orders:'<path d="M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4"/>',stock:'<path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',more:'<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'};
@@ -140,7 +140,7 @@ async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/
  var r=await SB.from('orders').insert(row).select().single();if(bad(r))return;
  if(f){f.qty=N(f.qty)-1;await SB.from('frames').update({qty:f.qty}).eq('id',f.id)}
  if(l){l.qty=N(l.qty)-1;await SB.from('lenses').update({qty:l.qty}).eq('id',l.id)}
- var o=r.data;o.no=db.orders.length+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();db.orders.push(o);
+ var o=r.data;o.no=o.order_no||db.orders.length+1;o.date=iso(new Date(o.created_at));o.ts=new Date(o.created_at).getTime();db.orders.push(o);
  closeSoft();toast('Order save ho gaya');render();detail(o.id)}
 function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.total)-N(o.paid);
  sheet('<div class="row"><h3>#'+o.no+' '+esc(o.name)+'</h3><button class="g s" data-c="close_()">Band</button></div><div class="card"><div>'+esc(o.phone)+' | '+o.date+'</div><table><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>'
@@ -151,7 +151,7 @@ function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.tot
  +'<div class="bar"><button class="g" data-c="newOrder(\''+id+'\')">Order edit karein</button></div><div class="bar"><button data-c="sendWA(\''+id+'\')">WhatsApp par slip bhejein</button></div><div class="bar"><button class="g" data-c="dl(\''+id+'\')">PDF Download</button><button class="g" data-c="share(\''+id+'\')">PDF file share</button></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
 async function stat(id,s){var r=await SB.from('orders').update({status:s}).eq('id',id);if(bad(r))return;db.orders.find(function(x){return x.id==id}).status=s;toast(s);render()}
 async function pay(id){var v=N($('rp').value);if(!v)return;var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v,r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
-async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});db.orders.forEach(function(o,i){o.no=i+1});close_();render()}
+async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});close_();render()}
 function msg(o,u){var b=N(o.total)-N(o.paid),r=function(e){var x=o.rx[e]||{};return e+': SPH '+(x.sph||'-')+' CYL '+(x.cyl||'-')+' AXIS '+(x.axis||'-')+(x.add?' ADD '+x.add:'')};
  return '*'+db.set.shop+'*\nOrder #'+o.no+' ('+o.date+')\nNaam: '+o.name+'\n'+r('R')+'\n'+r('L')+'\nFrame: '+(o.frame||'-')+'\nLens: '+o.lens+' '+(o.coat||'')+'\nTotal: '+rs(o.total)+'\nAdvance: '+rs(o.paid)+'\nBaqaya: '+rs(b)+'\nDelivery: '+(o.due||'-')+'\nShukriya!'+(u?'\n\nApni slip (PDF) yahan se kholein:\n'+u:'')}
 function pdf2(o){var J=window.jspdf;if(!J)return null;var d=new J.jsPDF({unit:'mm',format:'a5'}),b=N(o.total)-N(o.paid),T=[15,92,110],A=[232,163,61],G=[110,125,130],K=[18,48,58];
