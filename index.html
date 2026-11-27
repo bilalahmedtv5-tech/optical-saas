@@ -46,6 +46,7 @@ table{width:100%;border-collapse:collapse;text-align:center}td,th{padding:3px}th
 .brand{text-align:center;padding:10px 0 4px}.brand .lg{width:64px;height:64px;border-radius:20px;background:var(--pri)}.brand .lg svg{width:40px;height:20px}
 .brand h2{margin:14px 0 4px;font-size:22px}
 #t{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:22px;z-index:9;display:none;max-width:90%;font-weight:600}
+input.bad,select.bad{border-color:var(--bad)!important;background:var(--warnbg)}
 </style></head><body>
 <header><div class="hd"><span class="lg" id="lg"></span><div><h1 id="sn">Optical Shop Manager</h1><small id="today"></small></div></div></header>
 <main id="v"></main>
@@ -64,7 +65,7 @@ var $=function(i){return document.getElementById(i)};
 var iso=function(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 var N=function(x){return Number(x)||0},rs=function(x){return (db.set.currency||'Rs')+' '+N(x).toLocaleString('en-US')};
-function toast(m){var t=$('t');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},2600)}
+var tmr;function toast(m,ms){var t=$('t');t.textContent=m;t.style.display='block';clearTimeout(tmr);tmr=setTimeout(function(){t.style.display='none'},ms||2600)}
 function bad(r){if(r&&r.error){toast(r.error.message);return true}return false}
 /* ---------- login ---------- */
 var mode='login',recovering=/type=recovery/.test(location.hash);
@@ -128,8 +129,31 @@ function fillEdit(o){$('stk').style.display='none';$('n').value=o.name;$('p').va
 function fill(){var p=$('p').value.trim().replace(/\D/g,''),h=db.orders.filter(function(o){return o.phone==p}).sort(function(a,b){return b.ts-a.ts})[0];
  $('hist').innerHTML=h?'Purana customer: '+esc(h.name)+' <button class="s g" data-c="useRx(\''+h.id+'\')">Purana number lagayein</button>':''}
 function useRx(id){var o=db.orders.find(function(x){return x.id==id});['R','L'].forEach(function(e){['sph','cyl','axis','add'].forEach(function(k){$(e+k).value=(o.rx[e]||{})[k]||''})});$('n').value=o.name}
-async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/\D/g,'');if(!n||!p)return toast('Naam aur number zaroori');
+function fixPhone(p){p=String(p).replace(/\D/g,'');if(/^0092/.test(p))p=p.slice(2);if(/^03\d{9}$/.test(p))p='92'+p.slice(1);return p}
+function powErr(v,l,lo,hi){if(!/^[+-]?\d+(\.\d+)?$/.test(v))return l+' sirf number hona chahiye (jaise -2.00)';var n=Number(v);if(n<lo||n>hi)return l+' '+lo+' se '+hi+' ke darmiyan hona chahiye';if(Math.abs(n*4-Math.round(n*4))>1e-9)return l+' 0.25 ke steps mein hota hai (jaise -2.25, -2.50)';return ''}
+function failF(m,id){toast(m,4500);var el=id&&$(id);if(el){el.classList.add('bad');try{el.scrollIntoView({block:'center'})}catch(e){}el.focus()}}
+function checkOrder(n,p,rx,lt,tt,pd,due,isNew){
+ Array.prototype.forEach.call(document.querySelectorAll('.bad'),function(x){x.classList.remove('bad')});
+ if(n.length<2)return['Customer ka naam likhein','n'];
+ if(!/^\d{10,15}$/.test(p))return['WhatsApp number sahi nahi. Country code ke saath likhein (jaise 923001234567)','p'];
+ var E={R:'Right',L:'Left'},fs=[['sph','SPH',-20,20],['cyl','CYL',-10,10],['add','ADD',0.25,4]];
+ for(var e in E){var x=rx[e];
+  for(var i=0;i<fs.length;i++){var f=fs[i],v=x[f[0]];if(v==='')continue;var m=powErr(v,E[e]+' '+f[1],f[2],f[3]);if(m)return[m,e+f[0]]}
+  var hasCyl=x.cyl!==''&&Number(x.cyl)!==0;
+  if(hasCyl&&x.axis==='')return[E[e]+' mein CYL hai to AXIS zaroori hai',e+'axis'];
+  if(x.axis!==''&&!hasCyl)return[E[e]+' mein AXIS hai lekin CYL nahi. CYL likhein ya AXIS mita dein',e+'cyl'];
+  if(x.axis!==''&&(!/^\d+$/.test(x.axis)||Number(x.axis)<1||Number(x.axis)>180))return[E[e]+' AXIS 1 se 180 ke darmiyan poora number hona chahiye',e+'axis'];
+  if((lt=='Bifocal'||lt=='Progressive')&&x.sph!==''&&x.add==='')return[lt+' lens ke liye '+E[e]+' ADD zaroori hai',e+'add']}
+ if(tt<=0)return['Kul price likhein','tt'];
+ if(pd<0)return['Advance minus nahi ho sakta','pd'];
+ if(pd>tt)return['Advance kul price se zyada nahi ho sakta','pd'];
+ if(isNew&&due&&due<iso())return['Delivery date guzri hui tareekh nahi ho sakti','dd'];
+ return null}
+async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/\D/g,'');p=fixPhone(p);
  var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=$(e+k).value.trim()})});
+ var er=checkOrder(n,p,rx,$('lt').value,N($('tt').value),N($('pd').value),$('dd').value,!editId);if(er)return failF(er[0],er[1]);
+ var anyRx=['R','L'].some(function(e){return ['sph','cyl','axis','add'].some(function(k){return rx[e][k]!==''})});
+ if(!anyRx&&!confirm('Aankh ka number khali hai. Kya ye sirf frame/sunglasses ka order hai?'))return;
  if(editId){var eo=db.orders.find(function(x){return x.id==editId}),sfx=(eo.lens.match(/ \[.*\]$/)||[''])[0],
   ur={name:n,phone:p,rx:rx,frame:$('fn').value.trim(),lens:$('lt').value+sfx,coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim()};
   var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;closeSoft();toast('Order update ho gaya');render();detail(id2);return}
@@ -150,7 +174,7 @@ function detail(id){var o=db.orders.find(function(x){return x.id==id}),b=N(o.tot
  +(b>0?'<div class="row"><input id="rp" inputmode="numeric" placeholder="Payment mili"><button data-c="pay(\''+id+'\')">Add</button></div>':'')
  +'<div class="bar"><button class="g" data-c="newOrder(\''+id+'\')">Order edit karein</button></div><div class="bar"><button data-c="sendWA(\''+id+'\')">WhatsApp par slip bhejein</button></div><div class="bar"><button class="g" data-c="dl(\''+id+'\')">PDF Download</button><button class="g" data-c="share(\''+id+'\')">PDF file share</button></div><div class="bar"><button class="d" data-c="del(\''+id+'\')">Delete</button></div>')}
 async function stat(id,s){var r=await SB.from('orders').update({status:s}).eq('id',id);if(bad(r))return;db.orders.find(function(x){return x.id==id}).status=s;toast(s);render()}
-async function pay(id){var v=N($('rp').value);if(!v)return;var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v,r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
+async function pay(id){var v=N($('rp').value);if(v<=0)return toast('Sahi raqam likhein');var o=db.orders.find(function(x){return x.id==id}),n=N(o.paid)+v;if(n>N(o.total))return toast('Payment baqaya se zyada nahi ho sakti',4000);var r=await SB.from('orders').update({paid:n}).eq('id',id);if(bad(r))return;o.paid=n;render();detail(id)}
 async function del(id){if(!confirm('Order delete karein?'))return;var r=await SB.from('orders').delete().eq('id',id);if(bad(r))return;db.orders=db.orders.filter(function(x){return x.id!=id});close_();render()}
 function msg(o,u){var b=N(o.total)-N(o.paid),r=function(e){var x=o.rx[e]||{};return e+': SPH '+(x.sph||'-')+' CYL '+(x.cyl||'-')+' AXIS '+(x.axis||'-')+(x.add?' ADD '+x.add:'')};
  return '*'+db.set.shop+'*\nOrder #'+o.no+' ('+o.date+')\nNaam: '+o.name+'\n'+r('R')+'\n'+r('L')+'\nFrame: '+(o.frame||'-')+'\nLens: '+o.lens+' '+(o.coat||'')+'\nTotal: '+rs(o.total)+'\nAdvance: '+rs(o.paid)+'\nBaqaya: '+rs(b)+'\nDelivery: '+(o.due||'-')+'\nShukriya!'+(u?'\n\nApni slip (PDF) yahan se kholein:\n'+u:'')}
@@ -188,9 +212,9 @@ function stock(){$('v').innerHTML='<div class="bar"><button class="'+(seg=='fram
 function st2(){var list=seg=='frames'?db.frames:db.lenses.slice().sort(function(a,b){return N(a.sph)-N(b.sph)||N(a.cyl)-N(b.cyl)});
  if(seg=='lenses'&&q)list=list.filter(function(l){return String(l.sph).indexOf(q)>-1});
  $('sl').innerHTML=list.map(function(x){var lo=N(x.qty)<=N(x.min);return '<div class="card row"><div><b>'+esc(seg=='frames'?x.name:lname(x))+'</b><br><span class="tag '+(lo?'low':'')+'">'+(lo?'LOW: ':'Stock: ')+x.qty+'</span> <span class="m">alert '+x.min+'</span></div><div class="row"><button class="s" data-c="adj(\''+x.id+'\',-1)">-</button><button class="s" data-c="adj(\''+x.id+'\',1)">+</button><button class="s g" data-c="rm(\''+x.id+'\')">x</button></div></div>'}).join('')||'<p class="m">Abhi koi stock nahi.</p>'}
-async function addS(){var a=$('a1').value.trim(),qn=N($('a2').value),m=$('a3').value===''?2:N($('a3').value);if(!a)return toast('Naam zaroori');var r;
+async function addS(){var a=$('a1').value.trim(),qn=N($('a2').value),m=$('a3').value===''?2:N($('a3').value);if(!a)return toast('Naam zaroori');if(qn<0||qn!==Math.round(qn))return toast('Quantity sahi likhein (poora number)');var r;
  if(seg=='frames'){r=await SB.from('frames').insert({name:a,qty:qn,min:m}).select().single();if(bad(r))return;db.frames.push(r.data)}
- else{var s=$('s1').value.trim(),c=$('s2').value.trim();if(s==='')return toast('SPH likhein');
+ else{var s=$('s1').value.trim(),c=$('s2').value.trim();if(s==='')return toast('SPH likhein');var pe=powErr(s,'SPH',-20,20)||(c!==''?powErr(c,'CYL',-10,10):'');if(pe)return toast(pe,4000);
   var ex=db.lenses.find(function(l){return l.type==a&&N(l.sph)==N(s)&&N(l.cyl)==N(c)});
   if(ex){ex.qty=N(ex.qty)+qn;r=await SB.from('lenses').update({qty:ex.qty}).eq('id',ex.id);if(bad(r))return}
   else{r=await SB.from('lenses').insert({type:a,sph:N(s),cyl:c===''?null:N(c),qty:qn,min:m}).select().single();if(bad(r))return;db.lenses.push(r.data)}}
@@ -234,6 +258,7 @@ function runA(el,attr){var a=el.getAttribute(attr),m=a&&a.match(/^(\w+)\((.*)\)$
 document.addEventListener('click',function(e){var el=e.target;while(el&&el!==document){if(el.getAttribute&&el.getAttribute('data-c')){runA(el,'data-c');return}el=el.parentNode}});
 document.addEventListener('input',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-i'))runA(el,'data-i')});
 document.addEventListener('change',function(e){var el=e.target;if(el.getAttribute&&el.getAttribute('data-h'))runA(el,'data-h')});
+document.addEventListener('input',function(e){if(e.target&&e.target.classList)e.target.classList.remove('bad')});
 $('lg').innerHTML=LOGO;
 boot();
 </script></body></html>
