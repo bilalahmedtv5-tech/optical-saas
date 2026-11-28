@@ -98,7 +98,7 @@ function go(t){var was=tab;if(t=='home'&&was!='home'){history.back();return}if(t
 window.addEventListener('popstate',function(){if(sheetDepth){sheetDepth=false;editId=null;$('sh').innerHTML='';return}if(!U)return;if(tab!='home'){tab='home';q='';render()}});
 function lowF(){return db.frames.filter(function(f){return N(f.qty)<=N(f.min)})}
 function lowL(){return db.lenses.filter(function(l){return N(l.qty)<=N(l.min)})}
-function lname(l){return l.type+' '+(l.sph>0?'+':'')+l.sph+(N(l.cyl)?' / '+l.cyl:'')}
+function lname(l){return l.type+' '+fmtPow(l.sph)+(N(l.cyl)?' / '+fmtPow(l.cyl):'')}
 function render(){nav();$('sn').textContent=db.set.shop;$('today').textContent=new Date().toDateString();({home:home,orders:orders,stock:stock,more:more})[tab]()}
 function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={},tc=0;
  O.forEach(function(o){if(o.date==td){tS+=N(o.total);tc++}if(o.date.slice(0,7)==mo)mS+=N(o.total);bal+=N(o.total)-N(o.paid);ph[o.phone]=1});
@@ -114,7 +114,7 @@ function orders2(){var s=q.toLowerCase(),L=db.orders.filter(function(o){return !
 function sheet(h){if(!sheetDepth){history.pushState({s:1},'');sheetDepth=true}$('sh').innerHTML='<div class="sheet"><div>'+h+'</div></div>'}
 function close_(){editId=null;if(sheetDepth)history.back();else $('sh').innerHTML=''}
 function closeSoft(){editId=null;$('sh').innerHTML=''}
-function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="decimal"></td>'}).join('')+'</tr>'}
+function rxrow(e){return '<tr><td><b>'+e+'</b></td>'+['sph','cyl','axis','add'].map(function(k){return '<td><input id="'+e+k+'" inputmode="'+(k=='sph'||k=='cyl'?'text':'decimal')+'"'+(k=='axis'?'':' data-h="fmtF(\''+e+k+'\')"')+'></td>'}).join('')+'</tr>'}
 var editId=null;
 function newOrder(eid){var E=eid?db.orders.find(function(x){return x.id==eid}):null;editId=E?E.id:null;var fo=db.frames.map(function(f){return '<option value="'+f.id+'">'+esc(f.name)+' ('+f.qty+')</option>'}).join(''),lo=db.lenses.map(function(l){return '<option value="'+l.id+'">'+esc(lname(l))+' ('+l.qty+')</option>'}).join('');
  sheet('<h3>'+(E?'Order edit karein':'Naya order')+'</h3><label>Naam</label><input id="n"><label>WhatsApp number (923001234567)</label><input id="p" inputmode="tel" data-i="fill()"><div id="hist" class="m"></div>'
@@ -130,6 +130,8 @@ function fill(){var p=$('p').value.trim().replace(/\D/g,''),h=db.orders.filter(f
  $('hist').innerHTML=h?'Purana customer: '+esc(h.name)+' <button class="s g" data-c="useRx(\''+h.id+'\')">Purana number lagayein</button>':''}
 function useRx(id){var o=db.orders.find(function(x){return x.id==id});['R','L'].forEach(function(e){['sph','cyl','axis','add'].forEach(function(k){$(e+k).value=(o.rx[e]||{})[k]||''})});$('n').value=o.name}
 function fixPhone(p){p=String(p).replace(/\D/g,'');if(/^0092/.test(p))p=p.slice(2);if(/^03\d{9}$/.test(p))p='92'+p.slice(1);return p}
+function fmtPow(v){v=String(v==null?'':v).trim().replace(',','.');if(!/^[+-]?\d+(\.\d+)?$/.test(v))return v;var n=Number(v);return n===0?'0.00':(n>0?'+':'-')+Math.abs(n).toFixed(2)}
+function fmtF(id){var el=$(id);if(el)el.value=fmtPow(el.value)}
 function powErr(v,l,lo,hi){if(!/^[+-]?\d+(\.\d+)?$/.test(v))return l+' sirf number hona chahiye (jaise -2.00)';var n=Number(v);if(n<lo||n>hi)return l+' '+lo+' se '+hi+' ke darmiyan hona chahiye';if(Math.abs(n*4-Math.round(n*4))>1e-9)return l+' 0.25 ke steps mein hota hai (jaise -2.25, -2.50)';return ''}
 function failF(m,id){toast(m,4500);var el=id&&$(id);if(el){el.classList.add('bad');try{el.scrollIntoView({block:'center'})}catch(e){}el.focus()}}
 function checkOrder(n,p,rx,lt,tt,pd,due,isNew){
@@ -150,7 +152,7 @@ function checkOrder(n,p,rx,lt,tt,pd,due,isNew){
  if(isNew&&due&&due<iso())return['Delivery date guzri hui tareekh nahi ho sakti','dd'];
  return null}
 async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/\D/g,'');p=fixPhone(p);
- var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=$(e+k).value.trim()})});
+ var rx={};['R','L'].forEach(function(e){rx[e]={};['sph','cyl','axis','add'].forEach(function(k){rx[e][k]=k=='axis'?$(e+k).value.trim():fmtPow($(e+k).value.trim())})});
  var er=checkOrder(n,p,rx,$('lt').value,N($('tt').value),N($('pd').value),$('dd').value,!editId);if(er)return failF(er[0],er[1]);
  var anyRx=['R','L'].some(function(e){return ['sph','cyl','axis','add'].some(function(k){return rx[e][k]!==''})});
  if(!anyRx&&!confirm('Aankh ka number khali hai. Kya ye sirf frame/sunglasses ka order hai?'))return;
