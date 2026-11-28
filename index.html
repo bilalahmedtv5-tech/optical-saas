@@ -99,7 +99,7 @@ window.addEventListener('popstate',function(){if(sheetDepth){sheetDepth=false;ed
 function lowF(){return db.frames.filter(function(f){return N(f.qty)<=N(f.min)})}
 function lowL(){return db.lenses.filter(function(l){return N(l.qty)<=N(l.min)})}
 function lname(l){return l.type+' '+fmtPow(l.sph)+(N(l.cyl)?' / '+fmtPow(l.cyl):'')}
-function render(){nav();$('sn').textContent=db.set.shop;$('today').textContent=new Date().toDateString();({home:home,orders:orders,stock:stock,more:more})[tab]()}
+function render(){nav();$('sn').textContent=db.set.shop;$('today').textContent=new Date().toDateString();if(plan()=='none'&&tab!='more')return lock();({home:home,orders:orders,stock:stock,more:more})[tab]()}
 function home(){var td=iso(),mo=td.slice(0,7),O=db.orders,tS=0,mS=0,bal=0,ph={},tc=0;
  O.forEach(function(o){if(o.date==td){tS+=N(o.total);tc++}if(o.date.slice(0,7)==mo)mS+=N(o.total);bal+=N(o.total)-N(o.paid);ph[o.phone]=1});
  var lf=lowF(),ll=lowL(),nl=lf.length+ll.length,pend=O.filter(function(o){return o.status!='Delivered'});
@@ -161,7 +161,7 @@ async function saveO(){var n=$('n').value.trim(),p=$('p').value.trim().replace(/
   var ru=await SB.from('orders').update(ur).eq('id',editId);if(bad(ru))return;Object.assign(eo,ur);var id2=editId;closeSoft();toast('Order update ho gaya');render();detail(id2);return}
  var f=db.frames.find(function(x){return x.id==$('fs').value}),l=db.lenses.find(function(x){return x.id==$('ls').value});
  if(f&&N(f.qty)<1)return toast('Ye frame stock mein khatam hai');if(l&&N(l.qty)<1)return toast('Ye lens stock mein khatam hai');
- if(plan()=='free'&&monthCount()>=30){closeSoft();toast('Free plan ki limit (30 orders) poori. Upgrade karein');return plans()}
+ if(plan()=='none'){closeSoft();toast('Plan chalu nahi. Naya order ke liye plan lein',4000);return plans()}
  var row={name:n,phone:p,rx:rx,frame:f?f.name:$('fn').value.trim(),lens:$('lt').value+(l?' ['+lname(l)+']':''),coat:$('co').value.trim(),total:N($('tt').value),paid:N($('pd').value),due:$('dd').value||null,note:$('nt').value.trim(),status:'Ordered'};
  var r=await SB.from('orders').insert(row).select().single();if(bad(r))return;
  if(f){f.qty=N(f.qty)-1;await SB.from('frames').update({qty:f.qty}).eq('id',f.id)}
@@ -230,13 +230,17 @@ async function setS(){var s={user_id:U.id,shop:$('sp').value||'My Optical Shop',
 /* ---------- plan aur payment ---------- */
 var pk=function(x){return 'Rs '+N(x).toLocaleString('en-US')};
 async function loadSub(){db.sub={plan:'free',expires_at:null};db.isAdmin=false;try{var a=await SB.from('subscriptions').select('*').maybeSingle();if(a.data)db.sub=a.data;var b=await SB.from('admins').select('user_id').maybeSingle();db.isAdmin=!!b.data}catch(e){}}
-function plan(){return db.sub&&db.sub.expires_at&&new Date(db.sub.expires_at)>new Date()&&PLANS[db.sub.plan]?db.sub.plan:'free'}
+function daysLeft(d){return Math.max(0,Math.ceil((d-new Date())/864e5))}
+function plan(){if(db.isAdmin)return 'admin';if(db.sub&&db.sub.expires_at&&new Date(db.sub.expires_at)>new Date()&&PLANS[db.sub.plan])return db.sub.plan;return 'none'}
+function planLabel(){var p=plan();if(p=='admin')return 'Admin';if(p=='none')return 'Koi plan chalu nahi';return PLANS[p].n+' - '+new Date(db.sub.expires_at).toDateString()+' tak'}
 function monthCount(){var m=iso().slice(0,7);return db.orders.filter(function(o){return o.date.slice(0,7)==m}).length}
-function planBar(){var p=plan();if(p=='free')return '<div class="card row"><div><b>Free plan</b><div class="m">'+monthCount()+' / 30 orders is mahine</div></div><button class="s" data-c="plans()">Upgrade</button></div>';
- var d=Math.ceil((new Date(db.sub.expires_at)-new Date())/864e5);return d<=7?'<div class="card warn row"><b>'+PLANS[p].n+' plan '+d+' din mein khatam</b><button class="s" data-c="plans()">Renew</button></div>':''}
-function planCard(){var p=plan();return '<div class="card"><div class="row"><div><div class="m">Aap ka plan</div><b>'+(p=='free'?'Free':PLANS[p].n)+'</b>'+(p!='free'?'<div class="m">'+new Date(db.sub.expires_at).toDateString()+' tak</div>':'')+'</div><button class="s" data-c="plans()">Plan / Payment</button></div>'+(db.isAdmin?'<div class="bar"><button class="g" data-c="admin()">Admin: payment requests</button></div>':'')+'</div>'}
+function lock(){$('v').innerHTML='<div class="card" style="text-align:center;padding:28px 18px"><h3 style="margin:0 0 8px">Plan chalu nahi</h3><p class="m">Optical Shop Manager istemal karne ke liye plan lein. Payment check hote hi plan foran chalu ho jata hai.</p><button style="width:100%" data-c="plans()">Plan aur payment</button></div>'}
+function planBar(){var p=plan();if(p=='admin')return '';
+ if(p=='none')return '<div class="card warn row"><div><b>Plan chalu nahi</b><div class="m">Naya order banane ke liye plan lein</div></div><button class="s" data-c="plans()">Plan lein</button></div>';
+ var d=daysLeft(new Date(db.sub.expires_at));return d<=7?'<div class="card warn row"><b>'+PLANS[p].n+' plan '+d+' din mein khatam</b><button class="s" data-c="plans()">Renew</button></div>':''}
+function planCard(){return '<div class="card"><div class="row"><div><div class="m">Aap ka plan</div><b>'+planLabel()+'</b></div><button class="s" data-c="plans()">Plan / Payment</button></div>'+(db.isAdmin?'<div class="bar"><button class="g" data-c="admin()">Admin: payment requests</button></div>':'')+'</div>'}
 async function plans(){await loadSub();var p=plan(),h=await SB.from('payments').select('*').order('created_at',{ascending:false}).limit(5),
- cur=p=='free'?'Free (30 orders/mahina)':PLANS[p].n+' - '+new Date(db.sub.expires_at).toDateString()+' tak';
+ cur=planLabel();
  sheet('<div class="row"><h3>Plan aur payment</h3><button class="g s" data-c="close_()">Band</button></div><div class="card"><div class="m">Mojooda plan</div><b>'+cur+'</b></div>'
  +'<div class="card"><b>Basic</b> '+pk(PLANS.basic.p)+'/mahina<div class="m">Unlimited orders, stock alerts, PDF slip</div><br><b>Pro</b> '+pk(PLANS.pro.p)+'/mahina<div class="m">Basic + staff accounts aur reports (jald aa rahe hain)</div></div>'
  +'<div class="card"><label>Plan chunein</label><select id="pl" data-h="calc()">'+Object.keys(PLANS).map(function(k){return '<option value="'+k+'">'+PLANS[k].n+'</option>'}).join('')+'</select>'
